@@ -114,8 +114,46 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 {
 	//TODO: [PROJECT'24.MS1 - #05] [3] DYNAMIC ALLOCATOR - set_block_data
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("set_block_data is not implemented yet");
+	//panic("set_block_data is not implemented yet");
 	//Your Code is Here...
+
+	//printf("I am in set_block_data function");
+
+	/* check if the totalSize satisfy block data size conditions */
+	if(totalSize%2 == 1 || totalSize < 16)
+	{
+		cprintf("Error: Block size must be even and at least 16 Bytes\n");
+		return;
+	}
+
+	/* header is pointing on the address before va with in 4 bytes */
+	uint32 *header = ((uint32 *)va - 1);
+
+	/*
+	   the size of data block must be even because the first bit
+	   of header or footer is the flag for allocation
+	*/
+	if(!isAllocated)
+	*header = totalSize;
+	else
+	*header = totalSize + 1;
+
+	/* footer is pointing on the address after va with in totalSize - 8 bytes */
+	uint32 *footer = (uint32 *)((char *)va + totalSize - 8);
+
+	if(!isAllocated)
+	*footer = totalSize;
+	else
+	*footer = totalSize + 1;
+
+	/*
+	   some of printing to test the function by using the command set_block_data_test
+	   , first argument is totalSize and the second argument is isAllocated
+	*/
+	/*
+		cprintf("header address: %p \n",header);
+		cprintf("footer address: %p \n",footer);
+	*/
 }
 
 
