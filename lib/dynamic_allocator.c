@@ -150,9 +150,10 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 	   some of printing to test the function by using the command set_block_data_test
 	   , first argument is totalSize and the second argument is isAllocated
 	*/
-	/*cprintf("initial pointer: %p\n",va);
-	cprintf("header address: %p and header size: %u\n",header,*header);
-	cprintf("footer address: %p and footer size: %u\n",footer,*footer);*/
+	/*
+		cprintf("header address: %p \n",header);
+		cprintf("footer address: %p \n",footer);
+	*/
 }
 
 
