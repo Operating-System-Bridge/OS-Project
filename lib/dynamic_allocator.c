@@ -194,24 +194,22 @@ void *alloc_block_FF(uint32 size)
 
 	//TODO: [PROJECT'24.MS1 - #06] [3] DYNAMIC ALLOCATOR - alloc_block_FF
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-//	panic("alloc_block_FF is not implemented yet");
+    //panic("alloc_block_FF is not implemented yet");
 	//Your Code is Here...
 
 	//! Adding the size of the header and footer
 	uint32 reqSize = size + 2 * sizeof(int);
-	bool found = 0;
 
 	struct BlockElement *targetBlock;
-	struct BlockElement *address;
+	int curSize = 0;
+
 	short action = -1;
-	uint32* temp;
 	LIST_FOREACH(targetBlock, &freeBlocksList)
 	{
-		int curSize = get_block_size(targetBlock);
+		curSize = get_block_size(targetBlock);
 		if(curSize >= reqSize)
 		{
 			action = (curSize - reqSize < 4 * sizeof(int));
-			found = 1;
 			break;
 		}
 	}
@@ -222,9 +220,11 @@ void *alloc_block_FF(uint32 size)
 		return NULL;
 	}
 
-	uint32 actSize = get_block_size(targetBlock);
-	if(action) // The block found was a bit large
+	uint32 settingSize = (action ? curSize : reqSize);
+
+	if(!action)
 	{
+<<<<<<< HEAD
 		// actSize represents the whole size of the block
 		// This is the case where we need internal fragmentation
 		set_block_data(targetBlock, actSize, 1);
@@ -235,8 +235,14 @@ void *alloc_block_FF(uint32 size)
 		set_block_data(targetBlock, reqSize, 1);
 		struct BlockElement *newBlock = (struct BlockElement *)((char *)targetBlock + reqSize);
 		set_block_data(newBlock, actSize - reqSize, 0);
+=======
+		struct BlockElement *newBlock = (struct BlockElement*)((char*) targetBlock + reqSize);
+		set_block_data(newBlock, curSize - reqSize, 0);
+>>>>>>> 6c91cd3f3d9b6d88fad23c5500745bb317115187
 		LIST_INSERT_AFTER(&freeBlocksList, targetBlock, newBlock);
 	}
+
+	set_block_data(targetBlock, settingSize, 1);
 	LIST_REMOVE(&freeBlocksList, targetBlock);
 	return targetBlock;
 }
@@ -247,9 +253,54 @@ void *alloc_block_BF(uint32 size)
 {
 	//TODO: [PROJECT'24.MS1 - BONUS] [3] DYNAMIC ALLOCATOR - alloc_block_BF
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("alloc_block_BF is not implemented yet");
-	//Your Code is Here...
+	//panic("alloc_block_BF is not implemented yet");
 
+	//Your Code is Here...
+	{
+		if (size % 2 != 0) size++;
+		if (size < DYN_ALLOC_MIN_BLOCK_SIZE)
+			size = DYN_ALLOC_MIN_BLOCK_SIZE;
+	}
+
+	uint32 reqSize = size + 2 * sizeof(int);
+	struct BlockElement *targetBlock, *iterator;
+	uint32 curSize = 0, targetSize = 0;
+	int difference = -1;
+
+	LIST_FOREACH(iterator, &freeBlocksList)
+	{
+		curSize = get_block_size(iterator);
+		if(curSize >= reqSize)
+		{
+			if(difference == -1 || curSize - reqSize < difference)
+			{
+				targetSize = curSize;
+				difference = curSize - reqSize;
+				targetBlock = iterator;
+			}
+		}
+	}
+
+	if(difference == -1)
+	{
+		sbrk(0);
+		return NULL;
+	}
+
+	bool x = (targetSize - reqSize < 4 * sizeof(int));
+
+	int settingSize = (x ? targetSize : reqSize);
+
+	if(!x)
+	{
+		struct BlockElement *newBlock = (struct BlockElement*)((char*) targetBlock + reqSize);
+		set_block_data(newBlock, targetSize - reqSize, 0);
+		LIST_INSERT_AFTER(&freeBlocksList, targetBlock, newBlock);
+	}
+
+	set_block_data(targetBlock, settingSize, 1);
+	LIST_REMOVE(&freeBlocksList, targetBlock);
+	return targetBlock;
 }
 
 //===================================================
