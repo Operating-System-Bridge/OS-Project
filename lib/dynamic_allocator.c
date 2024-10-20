@@ -194,24 +194,22 @@ void *alloc_block_FF(uint32 size)
 
 	//TODO: [PROJECT'24.MS1 - #06] [3] DYNAMIC ALLOCATOR - alloc_block_FF
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-//	panic("alloc_block_FF is not implemented yet");
+    //panic("alloc_block_FF is not implemented yet");
 	//Your Code is Here...
 
 	//! Adding the size of the header and footer
 	uint32 reqSize = size + 2 * sizeof(int);
-	bool found = 0;
 
 	struct BlockElement *targetBlock;
-	struct BlockElement *address;
+	int curSize = 0;
+
 	short action = -1;
-	uint32* temp;
 	LIST_FOREACH(targetBlock, &freeBlocksList)
 	{
-		int curSize = get_block_size(targetBlock);
+		curSize = get_block_size(targetBlock);
 		if(curSize >= reqSize)
 		{
 			action = (curSize - reqSize < 4 * sizeof(int));
-			found = 1;
 			break;
 		}
 	}
@@ -222,21 +220,16 @@ void *alloc_block_FF(uint32 size)
 		return NULL;
 	}
 
-	uint32 actSize = get_block_size(targetBlock);
-	if(action) // The block found was a bit large
+	uint32 settingSize = (action ? curSize : curSize - reqSize);
+
+	if(!action)
 	{
-		// actSize represents the whole size of the block
-		// This is the case where we need internal fragmentation
-		set_block_data(targetBlock, actSize, 1);
-	}
-	else
-	{
-		// The block found was too large
-		set_block_data(targetBlock, reqSize, 1);
-		struct BlockElement *newBlock = (void *)targetBlock + reqSize;
-		set_block_data(newBlock, actSize - reqSize + 2 * sizeof(int), 0);
+		struct BlockElement *newBlock = (struct BlockElement*)((char*) targetBlock + reqSize);
+		set_block_data(newBlock, curSize - reqSize, 0);
 		LIST_INSERT_AFTER(&freeBlocksList, targetBlock, newBlock);
 	}
+
+	set_block_data(targetBlock, settingSize, 1);
 	LIST_REMOVE(&freeBlocksList, targetBlock);
 	return targetBlock;
 }
@@ -247,7 +240,7 @@ void *alloc_block_BF(uint32 size)
 {
 	//TODO: [PROJECT'24.MS1 - BONUS] [3] DYNAMIC ALLOCATOR - alloc_block_BF
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("alloc_block_BF is not implemented yet");
+	//panic("alloc_block_BF is not implemented yet");
 	//Your Code is Here...
 
 }
