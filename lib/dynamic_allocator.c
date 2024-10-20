@@ -216,7 +216,7 @@ void *alloc_block_FF(uint32 size)
 		}
 	}
 
-	if(action == -1)
+	if(!found)
 	{
 		sbrk(0);
 		return NULL;
@@ -233,8 +233,8 @@ void *alloc_block_FF(uint32 size)
 	{
 		// The block found was too large
 		set_block_data(targetBlock, reqSize, 1);
-		struct BlockElement *newBlock = (void *)targetBlock + reqSize;
-		set_block_data(newBlock, actSize - reqSize + 2 * sizeof(int), 0);
+		struct BlockElement *newBlock = (struct BlockElement *)((char *)targetBlock + reqSize);
+		set_block_data(newBlock, actSize - reqSize, 0);
 		LIST_INSERT_AFTER(&freeBlocksList, targetBlock, newBlock);
 	}
 	LIST_REMOVE(&freeBlocksList, targetBlock);
