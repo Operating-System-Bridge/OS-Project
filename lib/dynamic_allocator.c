@@ -7,8 +7,7 @@
 #include <inc/assert.h>
 #include <inc/string.h>
 #include "../inc/dynamic_allocator.h"
-
-
+#include "../inc/queue.h"
 //==================================================================================//
 //============================== GIVEN FUNCTIONS ===================================//
 //==================================================================================//
@@ -103,8 +102,17 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 
 	//TODO: [PROJECT'24.MS1 - #04] [3] DYNAMIC ALLOCATOR - initialize_dynamic_allocator
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("initialize_dynamic_allocator is not implemented yet");
-	//Your Code is Here...
+//	panic("initialize_dynamic_allocator is not implemented yet");
+
+	struct BlockElement* FirstFreeBlock = (struct BlockElement*)(daStart + 2 * sizeof(int));
+	uint32 *BEG_BLOCK = (uint32*)(daStart);
+	uint32 *END_BLOCK = (uint32*)(daStart + initSizeOfAllocatedSpace - sizeof(int));
+	*BEG_BLOCK = *END_BLOCK = 1;
+	uint32 *HEADER = (uint32*)(daStart + sizeof(int));
+	uint32 *FOOTER = (uint32*)(daStart + initSizeOfAllocatedSpace - 2 * sizeof(int));
+	*HEADER = *FOOTER = initSizeOfAllocatedSpace - 2 * sizeof(int);
+
+	LIST_INSERT_HEAD(&freeBlocksList, FirstFreeBlock);
 
 }
 //==================================
@@ -117,6 +125,7 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 	//panic("set_block_data is not implemented yet");
 	//Your Code is Here...
 
+<<<<<<< HEAD
 	//printf("I am in set_block_data function");
 
 	/* check if the totalSize satisfy block data size conditions */
@@ -153,6 +162,8 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 	/*cprintf("initial pointer: %p\n",va);
 	cprintf("header address: %p and header size: %u\n",header,*header);
 	cprintf("footer address: %p and footer size: %u\n",footer,*footer);*/
+=======
+>>>>>>> Dynamic-Alloc-Initilization
 }
 
 
@@ -206,6 +217,7 @@ void free_block(void *va)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	panic("free_block is not implemented yet");
 	//Your Code is Here...
+
 }
 
 //=========================================
