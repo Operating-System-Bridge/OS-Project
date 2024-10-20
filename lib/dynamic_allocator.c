@@ -240,9 +240,54 @@ void *alloc_block_BF(uint32 size)
 {
 	//TODO: [PROJECT'24.MS1 - BONUS] [3] DYNAMIC ALLOCATOR - alloc_block_BF
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("alloc_block_BF is not implemented yet");
-	//Your Code is Here...
+	//panic("alloc_block_BF is not implemented yet");
 
+	//Your Code is Here...
+	{
+		if (size % 2 != 0) size++;
+		if (size < DYN_ALLOC_MIN_BLOCK_SIZE)
+			size = DYN_ALLOC_MIN_BLOCK_SIZE;
+	}
+
+	uint32 reqSize = size + 2 * sizeof(int);
+	struct BlockElement *targetBlock, *iterator;
+	uint32 curSize = 0, targetSize = 0;
+	int difference = -1;
+
+	LIST_FOREACH(iterator, &freeBlocksList)
+	{
+		curSize = get_block_size(iterator);
+		if(curSize >= reqSize)
+		{
+			if(difference == -1 || curSize - reqSize < difference)
+			{
+				targetSize = curSize;
+				difference = curSize - reqSize;
+				targetBlock = iterator;
+			}
+		}
+	}
+
+	if(difference == -1)
+	{
+		sbrk(0);
+		return NULL;
+	}
+
+	bool x = (targetSize - reqSize < 4 * sizeof(int));
+
+	int settingSize = (x ? targetSize : reqSize);
+
+	if(!x)
+	{
+		struct BlockElement *newBlock = (struct BlockElement*)((char*) targetBlock + reqSize);
+		set_block_data(newBlock, targetSize - reqSize, 0);
+		LIST_INSERT_AFTER(&freeBlocksList, targetBlock, newBlock);
+	}
+
+	set_block_data(targetBlock, settingSize, 1);
+	LIST_REMOVE(&freeBlocksList, targetBlock);
+	return targetBlock;
 }
 
 //===================================================
