@@ -126,6 +126,9 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 	//Your Code is Here...
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> Allocate-by-First-Fit
 	//printf("I am in set_block_data function");
 
 	/* check if the totalSize satisfy block data size conditions */
@@ -159,19 +162,30 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 	   some of printing to test the function by using the command set_block_data_test
 	   , first argument is totalSize and the second argument is isAllocated
 	*/
+<<<<<<< HEAD
 	/*cprintf("initial pointer: %p\n",va);
 	cprintf("header address: %p and header size: %u\n",header,*header);
 	cprintf("footer address: %p and footer size: %u\n",footer,*footer);*/
 =======
 >>>>>>> Dynamic-Alloc-Initilization
+=======
+	/*
+		cprintf("header address: %p \n",header);
+		cprintf("footer address: %p \n",footer);
+	*/
+>>>>>>> Allocate-by-First-Fit
 }
 
-
+int cnt = 0;
 //=========================================
 // [3] ALLOCATE BLOCK BY FIRST FIT:
 //=========================================
 void *alloc_block_FF(uint32 size)
 {
+
+	if(size == 0)
+		return NULL;
+
 	//==================================================================================
 	//DON'T CHANGE THESE LINES==========================================================
 	//==================================================================================
@@ -192,9 +206,51 @@ void *alloc_block_FF(uint32 size)
 
 	//TODO: [PROJECT'24.MS1 - #06] [3] DYNAMIC ALLOCATOR - alloc_block_FF
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("alloc_block_FF is not implemented yet");
+//	panic("alloc_block_FF is not implemented yet");
 	//Your Code is Here...
 
+	//! Adding the size of the header and footer
+	uint32 reqSize = size + 2 * sizeof(int);
+	bool found = 0;
+
+	struct BlockElement *targetBlock;
+	struct BlockElement *address;
+	short action = -1;
+	uint32* temp;
+	LIST_FOREACH(targetBlock, &freeBlocksList)
+	{
+		int curSize = get_block_size(targetBlock);
+		if(curSize >= reqSize)
+		{
+			action = (curSize - reqSize < 4 * sizeof(int));
+			found = 1;
+			break;
+		}
+	}
+
+	if(!found)
+	{
+		sbrk(0);
+		return NULL;
+	}
+
+	uint32 actSize = get_block_size(targetBlock);
+	if(action) // The block found was a bit large
+	{
+		// actSize represents the whole size of the block
+		// This is the case where we need internal fragmentation
+		set_block_data(targetBlock, actSize, 1);
+	}
+	else
+	{
+		// The block found was too large
+		set_block_data(targetBlock, reqSize, 1);
+		struct BlockElement *newBlock = (struct BlockElement *)((char *)targetBlock + reqSize);
+		set_block_data(newBlock, actSize - reqSize, 0);
+		LIST_INSERT_AFTER(&freeBlocksList, targetBlock, newBlock);
+	}
+	LIST_REMOVE(&freeBlocksList, targetBlock);
+	return targetBlock;
 }
 //=========================================
 // [4] ALLOCATE BLOCK BY BEST FIT:
