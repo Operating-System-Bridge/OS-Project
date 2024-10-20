@@ -7,8 +7,7 @@
 #include <inc/assert.h>
 #include <inc/string.h>
 #include "../inc/dynamic_allocator.h"
-
-
+#include "../inc/queue.h"
 //==================================================================================//
 //============================== GIVEN FUNCTIONS ===================================//
 //==================================================================================//
@@ -103,8 +102,17 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 
 	//TODO: [PROJECT'24.MS1 - #04] [3] DYNAMIC ALLOCATOR - initialize_dynamic_allocator
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("initialize_dynamic_allocator is not implemented yet");
-	//Your Code is Here...
+//	panic("initialize_dynamic_allocator is not implemented yet");
+
+	struct BlockElement* FirstFreeBlock = (struct BlockElement*)(daStart + 2 * sizeof(int));
+	uint32 *BEG_BLOCK = (uint32*)(daStart);
+	uint32 *END_BLOCK = (uint32*)(daStart + initSizeOfAllocatedSpace - sizeof(int));
+	*BEG_BLOCK = *END_BLOCK = 1;
+	uint32 *HEADER = (uint32*)(daStart + sizeof(int));
+	uint32 *FOOTER = (uint32*)(daStart + initSizeOfAllocatedSpace - 2 * sizeof(int));
+	*HEADER = *FOOTER = initSizeOfAllocatedSpace - 2 * sizeof(int);
+
+	LIST_INSERT_HEAD(&freeBlocksList, FirstFreeBlock);
 
 }
 //==================================
@@ -207,6 +215,7 @@ void free_block(void *va)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	panic("free_block is not implemented yet");
 	//Your Code is Here...
+
 }
 
 //=========================================
