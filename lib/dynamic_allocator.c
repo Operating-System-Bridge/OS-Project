@@ -125,10 +125,6 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 	//panic("set_block_data is not implemented yet");
 	//Your Code is Here...
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> Allocate-by-First-Fit
 	//printf("I am in set_block_data function");
 
 	/* check if the totalSize satisfy block data size conditions */
@@ -162,18 +158,13 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 	   some of printing to test the function by using the command set_block_data_test
 	   , first argument is totalSize and the second argument is isAllocated
 	*/
-<<<<<<< HEAD
 	/*cprintf("initial pointer: %p\n",va);
 	cprintf("header address: %p and header size: %u\n",header,*header);
 	cprintf("footer address: %p and footer size: %u\n",footer,*footer);*/
-=======
->>>>>>> Dynamic-Alloc-Initilization
-=======
 	/*
 		cprintf("header address: %p \n",header);
 		cprintf("footer address: %p \n",footer);
 	*/
->>>>>>> Allocate-by-First-Fit
 }
 
 int cnt = 0;
@@ -271,8 +262,72 @@ void free_block(void *va)
 {
 	//TODO: [PROJECT'24.MS1 - #07] [3] DYNAMIC ALLOCATOR - free_block
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("free_block is not implemented yet");
+//	panic("free_block is not implemented yet");
 	//Your Code is Here...
+	if(va == NULL || is_free_block(va))
+		return;
+	uint32 currentSize = get_block_size(va);
+	set_block_data(va, currentSize, 0);
+//	print_blocks_list(freeBlocksList);
+
+	struct BlockElement* currentBlock = (struct BlockElement*)va;
+
+	if(LIST_SIZE(&freeBlocksList) == 0)
+	{
+		LIST_INSERT_HEAD(&freeBlocksList, currentBlock);
+	}
+	else
+	{
+		struct BlockElement *targetBlock, *destinationBlock = NULL;
+		LIST_FOREACH(targetBlock, &freeBlocksList)
+		{
+			if(targetBlock > currentBlock)
+				break;
+			destinationBlock = targetBlock;
+		}
+		if(destinationBlock != NULL)
+			LIST_INSERT_AFTER(&freeBlocksList, destinationBlock, currentBlock);
+		else
+			LIST_INSERT_HEAD(&freeBlocksList, currentBlock);
+	}
+	struct BlockElement *prv = NULL, *nxt = NULL, *iterator;
+	LIST_FOREACH(iterator, &freeBlocksList)
+	{
+		if(iterator > currentBlock)
+		{
+			nxt = iterator;
+			break;
+		}
+		if(iterator != currentBlock)
+			prv = iterator;
+	}
+	bool hasNext = (nxt != NULL);
+	if(nxt != NULL)
+		hasNext &= ((struct BlockElement *)((char *)currentBlock + get_block_size(currentBlock)) == nxt);
+	bool hasPrv = (prv != NULL);
+	if(prv != NULL)
+		hasPrv &= ((struct BlockElement *)((char *)currentBlock - get_block_size(prv)) == prv);
+
+	if(hasNext && !hasPrv)
+	{
+		LIST_REMOVE(&freeBlocksList, nxt);
+		uint32 size = get_block_size(nxt);
+		set_block_data(currentBlock, size + currentSize, 0);
+	}
+	else if(hasPrv && !hasNext)
+	{
+		LIST_REMOVE(&freeBlocksList, currentBlock);
+		uint32 size = get_block_size(prv);
+		set_block_data(prv, size + currentSize, 0);
+	}
+	else if(hasPrv && hasNext)
+	{
+		LIST_REMOVE(&freeBlocksList, nxt);
+		uint32 size = get_block_size(nxt);
+		LIST_REMOVE(&freeBlocksList, currentBlock);
+	    size += get_block_size(prv);
+		set_block_data(prv, size + currentSize, 0);
+	}
 
 }
 

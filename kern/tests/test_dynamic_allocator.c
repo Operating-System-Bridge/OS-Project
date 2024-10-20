@@ -159,7 +159,6 @@ int test_initial_alloc(int ALLOC_STRATEGY)
 	midVAs[idx] = va + actualSize/2 ;
 	endVAs[idx] = va + actualSize - sizeof(short);
 	//Check returned va
-	cprintf("%p, %p %d \n", va , curVA + sizeOfMetaData/2, LIST_SIZE(&freeBlocksList));
 	if(va == NULL || (va != (curVA + sizeOfMetaData/2)) || LIST_SIZE(&freeBlocksList) != 0)
 	{
 		is_correct = 0;
