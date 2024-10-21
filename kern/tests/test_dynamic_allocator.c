@@ -191,21 +191,12 @@ int test_initial_alloc(int ALLOC_STRATEGY)
 	va = startVAs[idx] = alloc_block(actualSize, ALLOC_STRATEGY);
 	midVAs[idx] = va + actualSize/2 ;
 	endVAs[idx] = va + actualSize - sizeof(short);
-<<<<<<< HEAD
-	//Check returned va
-	if(va == NULL || (va != (curVA + sizeOfMetaData/2)) || LIST_SIZE(&freeBlocksList) != 0)
-	{
-		is_correct = 0;
-		cprintf("alloc_block_xx #4: WRONG ALLOC.\n");
-	}
-=======
 	//Check block
 	expectedVA = (curVA + sizeOfMetaData/2);
 
 	if (is_correct) is_correct = check_block(va, expectedVA, remainSize, 1) ;
 	if (is_correct) is_correct = check_list_size(0);
 
->>>>>>> Allocate-by-First-Fit
 	*(startVAs[idx]) = idx ;
 	*(midVAs[idx]) = idx ;
 	*(endVAs[idx]) = idx ;
