@@ -23,7 +23,29 @@
 int last_command_idx = -1;
 char command_history[HISTORY_MAX+1][BUFLEN];
 char empty[BUFLEN];
+//HELPERS
 
+int matching_num(int i, int num){
+	if(commands[i].num_of_args == num)
+		return 1;
+	if(commands[i].num_of_args == -1)
+		if(num)
+			return 1;
+	return 0;
+
+}
+
+int is_subsequence(char* str, char* sub){
+	while(*str&&*sub){
+		if(*str == *sub)
+			sub++;
+		str++;
+	}
+	if(!(*sub))
+		return 1;
+	return 0;
+}
+//HELPERS END
 void clearandwritecommand(int* i, int commandidx, char* buf, int *last_index) {
 	for (int j = 0; j < *i; j++) {
 		cputchar('\b');
@@ -457,12 +479,25 @@ int process_command(int number_of_arguments, char** arguments)
 {
 	//TODO: [PROJECT'24.MS1 - #01] [1] PLAY WITH CODE! - process_command
 
+	LIST_INIT(&foundCommands);
+	bool g_t_0 = number_of_arguments > 0;
+	//Match?
 	for (int i = 0; i < NUM_OF_COMMANDS; i++)
 	{
-		if (strcmp(arguments[0], commands[i].name) == 0)
+		if (strcmp(arguments[0], commands[i].name)==0)
 		{
-			return i;
+			if(matching_num(i, number_of_arguments-1))
+				return i;
+
+			LIST_INSERT_HEAD(&foundCommands, &commands[i]);
+			return CMD_INV_NUM_ARGS;
 		}
 	}
+	//Part-match?
+	for(int i = 0; i < NUM_OF_COMMANDS; i++)
+		if(is_subsequence(commands[i].name, arguments[0]))
+			LIST_INSERT_TAIL(&foundCommands, &commands[i]);
+	if(foundCommands.size)
+		return CMD_MATCHED;
 	return CMD_INVALID;
 }
