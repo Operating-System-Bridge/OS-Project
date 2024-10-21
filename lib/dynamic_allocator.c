@@ -103,7 +103,7 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 	//TODO: [PROJECT'24.MS1 - #04] [3] DYNAMIC ALLOCATOR - initialize_dynamic_allocator
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 //	panic("initialize_dynamic_allocator is not implemented yet");
-
+	LIST_INIT(&freeBlocksList);
 	struct BlockElement* FirstFreeBlock = (struct BlockElement*)(daStart + 2 * sizeof(int));
 	uint32 *BEG_BLOCK = (uint32*)(daStart);
 	uint32 *END_BLOCK = (uint32*)(daStart + initSizeOfAllocatedSpace - sizeof(int));
@@ -234,6 +234,7 @@ void *alloc_block_FF(uint32 size)
 
 	set_block_data(targetBlock, settingSize, 1);
 	LIST_REMOVE(&freeBlocksList, targetBlock);
+//	print_blocks_list(freeBlocksList);
 	return targetBlock;
 }
 //=========================================
