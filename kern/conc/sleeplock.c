@@ -34,20 +34,47 @@ void acquire_sleeplock(struct sleeplock *lk)
 {
 	//TODO: [PROJECT'24.MS1 - #13] [4] LOCKS - acquire_sleeplock
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("acquire_sleeplock is not implemented yet");
+	//panic("acquire_sleeplock is not implemented yet");
 	//Your Code is Here...
-
+       /*
+        * acquire_spinlock(struct spinlock *lk)
+        * while (&(lk->locked)) {
+        * sleep(struct Channel *chan, struct spinlock* lk)
+	      }
+	     lk->locked = true
+	     release_spinlock(&guard);
+	     }
+        * */
+	acquire_spinlock(&(lk->lk));
+	while(lk->locked == 1){
+		sleep(&(lk->chan),&(lk->lk));
+	}
+	lk->locked = 1;
+	release_spinlock(&(lk->lk));
 }
 
 void release_sleeplock(struct sleeplock *lk)
 {
 	//TODO: [PROJECT'24.MS1 - #14] [4] LOCKS - release_sleeplock
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("release_sleeplock is not implemented yet");
+	//panic("release_sleeplock is not implemented yet");
 	//Your Code is Here...
-
+    /*
+     * 	acquire_spinlock(&guard)
+	   if (queue_size(lk->chan) )
+       {
+       wakeup_all(struct Channel *chan)
+	   }
+	  lk->locked = false;
+	  release_spinlock(&guard);
+     */
+	acquire_spinlock(&(lk->lk));
+	if(queue_size(&((lk->chan).queue)) > 0){
+		wakeup_all(&(lk->chan));
+	}
+	lk->locked=0;
+	release_spinlock(&(lk->lk));
 }
-
 
 
 
