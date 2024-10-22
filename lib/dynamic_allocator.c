@@ -377,8 +377,93 @@ void *realloc_block_FF(void* va, uint32 new_size)
 {
 	//TODO: [PROJECT'24.MS1 - #08] [3] DYNAMIC ALLOCATOR - realloc_block_FF
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("realloc_block_FF is not implemented yet");
+	//panic("realloc_block_FF is not implemented yet");
 	//Your Code is Here...
+
+    if(va != NULL && !new_size)
+    {
+    	free_block(va);
+    	return NULL;
+    }
+
+    if(va == NULL)
+    {
+    	if(new_size)
+    	{
+    		return alloc_block_FF(new_size);
+    	}
+    	else
+    	return NULL;
+    }
+
+    if(new_size%2 == 1)
+	new_size++;
+	new_size += 8;
+
+    uint32 actual_size = get_block_size(va);
+    void *next_block = (char*)va + actual_size;
+	uint32 next_block_size = get_block_size(next_block);
+	uint32 next_block_statue = is_free_block(next_block);
+    if(new_size > actual_size)
+    {
+        if(next_block_statue && next_block_size >= new_size - actual_size)
+        {
+        	if(next_block_size - (new_size - actual_size) >= 16)
+        	{
+        		set_block_data(va, new_size, 1);
+        		set_block_data((void*)((char*)va + new_size), next_block_size - (new_size - actual_size), 0);
+        		struct BlockElement *new_free_block = (struct BlockElement*)((char*)va + new_size);
+        		LIST_INSERT_AFTER(&freeBlocksList, (struct BlockElement*)next_block, new_free_block);
+        		LIST_REMOVE(&freeBlocksList, (struct BlockElement*)next_block);
+        	}
+        	else
+        	{
+        		set_block_data(va, actual_size + next_block_size, 1);
+        		LIST_REMOVE(&freeBlocksList, (struct BlockElement*)next_block);
+        	}
+
+        	return va;
+        }
+        else
+        {
+        	free_block(va);
+        	return alloc_block_FF(new_size - 8);
+        }
+
+    }
+    else
+    {
+    	if(actual_size - new_size >= 16)
+    	{
+    		set_block_data(va,new_size,1);
+
+    		if(!next_block_statue)
+    		{
+    			set_block_data((void*)((char*)va + new_size),actual_size - new_size, 0);
+
+				struct BlockElement* currentBlock = (struct BlockElement*)((char*)va + new_size);
+				struct BlockElement *targetBlock, *destinationBlock = NULL;
+				LIST_FOREACH(targetBlock, &freeBlocksList)
+				{
+					if(targetBlock > currentBlock)
+					break;
+					destinationBlock = targetBlock;
+				}
+				if(destinationBlock != NULL)
+				LIST_INSERT_AFTER(&freeBlocksList, destinationBlock, currentBlock);
+				else
+				LIST_INSERT_HEAD(&freeBlocksList, currentBlock);
+    		}
+    		else
+    		{
+    			set_block_data((void*)((char*)va + new_size),(actual_size - new_size) + next_block_size, 0);
+    			LIST_INSERT_AFTER(&freeBlocksList, (struct BlockElement*)next_block, (struct BlockElement*)((char*)va + new_size));
+    			LIST_REMOVE(&freeBlocksList, (struct BlockElement*)next_block);
+    		}
+    	}
+
+    	return va;
+    }
 }
 
 /*********************************************************************************************/
