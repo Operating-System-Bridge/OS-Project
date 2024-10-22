@@ -19,6 +19,7 @@
 #include "../tests/tst_handler.h"
 #include "../tests/utilities.h"
 #include "inc/dynamic_allocator.h"
+#include "kern/tests/test_dynamic_allocator.h"
 
 
 //Array of commands. (initialized)
@@ -91,6 +92,7 @@ struct Command commands[] =
 		/* Test Commands */
 		//**************************************//
 		{"set_block_data_test", "please enter total size, block condition", command_set_block_data_test, 2},
+		{"reallocTestComplete", "Complete test of the reallocation function", command_test_realloc_block_FF_COMPLETE, 0}
 };
 
 //Number of commands = size of the array / size of command structure
@@ -884,6 +886,12 @@ int command_set_block_data_test(int number_of_arguments, char **arguments)
 	bool isAllocated = (bool)strtol(arguments[2],NULL,10);
 
 	set_block_data(va,total_size,isAllocated);
+	return 0;
+}
+
+int command_test_realloc_block_FF_COMPLETE(int number_of_arguments, char **arguments)
+{
+	test_realloc_block_FF_COMPLETE();
 	return 0;
 }
 

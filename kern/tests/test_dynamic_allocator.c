@@ -1512,7 +1512,43 @@ void test_realloc_block_FF_COMPLETE()
 	return;
 #endif
 
-	panic("this is UNSEEN test");
+	//panic("this is UNSEEN test");
+
+	// initialization
+
+	int initAllocatedSpace = 3*Mega;
+	initialize_dynamic_allocator(KERNEL_HEAP_START, initAllocatedSpace);
+
+	// We need to allocate some block at the beginning of the heap
+	// Reallocate the previously allocated block to a smaller size
+	// The new list size should be equal to 1 and the size of the free block
+	// Should be equal to the size of the heap - the size of the allocated block
+
+	// First free block size = 3 * Mega - 8 byte
+
+	// BEG HEADER FOOTER END
+
+	void* curVA = (void*) KERNEL_HEAP_START + sizeof(int);
+
+	uint32 freeBlockSize = get_block_size(curVA + sizeof(int));
+
+	void* address = alloc_block_FF(1 * Mega);
+	// Actual block size = 1 * Mega + 8
+	void* newBlockAddress = realloc_block_FF(address, 1 * Mega - 0.5 * Mega);
+	// 0.5 * Mega + 8
+
+	// freeBlockSize - actBlockSize = 2 * Mega
+
+	// FreeBlockSize - newBlockSize = 3 * Mega - 8 byte - 0.5 * Mega - 8 byte
+	// 2.5 Mega - 16 byte
+
+	// 2.5 * (1024) ^ 2 - 16
+
+	check_list_size(1);
+
+	uint32 expected = 2621424;
+
+	print_blocks_list(freeBlocksList);
 
 }
 

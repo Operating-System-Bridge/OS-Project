@@ -396,8 +396,10 @@ void *realloc_block_FF(void* va, uint32 new_size)
     	return NULL;
     }
 
-    if(new_size%2 == 1)
-	new_size++;
+    if (new_size % 2 != 0) new_size++;
+	if (new_size < DYN_ALLOC_MIN_BLOCK_SIZE)
+		new_size = DYN_ALLOC_MIN_BLOCK_SIZE ;
+
 	new_size += 8;
 
     uint32 actual_size = get_block_size(va);
