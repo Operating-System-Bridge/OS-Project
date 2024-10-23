@@ -41,9 +41,7 @@ int is_subsequence(char* str, char* sub){
 			sub++;
 		str++;
 	}
-	if(!(*sub))
-		return 1;
-	return 0;
+	return !(*sub);
 }
 //HELPERS END
 void clearandwritecommand(int* i, int commandidx, char* buf, int *last_index) {
