@@ -311,6 +311,7 @@ int sys_pf_calculate_allocated_pages(void)
 /*******************************/
 void sys_free_user_mem(uint32 virtual_address, uint32 size)
 {
+	validate_params(virtual_address, size);
 	if(isBufferingEnabled())
 	{
 		__free_user_mem_with_buffering(cur_env, virtual_address, size);
