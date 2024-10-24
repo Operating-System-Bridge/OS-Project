@@ -13,6 +13,8 @@
 #include <inc/types.h>
 #include <kern/cmd/command_prompt.h>
 
+
+
 //Max length of any command
 #define CMDLEN 128
 
@@ -95,5 +97,11 @@ int command_sch_test(int number_of_arguments, char **arguments);
 
 //2023
 int command_tst(int number_of_arguments, char **arguments);
+
+//**************************************//
+/* Test Commands */
+//**************************************//
+int command_set_block_data_test(int number_of_arguments, char **arguments);
+int command_test_realloc_block_FF_COMPLETE(int number_of_arguments, char **arguments);
 
 #endif /* KERN_CMD_COMMANDS_H_ */

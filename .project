@@ -74,4 +74,11 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>kern/tests/test_dynamic_allocator.c</name>
+			<type>1</type>
+			<location>C:/fos_cygwin/FOS_CODES/OS-Project/kern/tests/test_dynamic_allocator.c</location>
+		</link>
+	</linkedResources>
 </projectDescription>
