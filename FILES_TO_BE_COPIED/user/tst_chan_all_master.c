@@ -14,7 +14,7 @@ _main(void)
 	int id;
 	for (int i = 0; i < numOfSlaves; ++i)
 	{
-		id = sys_create_env("tstChanOneSlave", (myEnv->page_WS_max_size),(myEnv->SecondListSize), (myEnv->percentage_of_WS_pages_to_be_removed));
+		id = sys_create_env("tstChanAllSlave", (myEnv->page_WS_max_size),(myEnv->SecondListSize), (myEnv->percentage_of_WS_pages_to_be_removed));
 		if (id== E_ENV_CREATION_ERROR)
 		{
 			cprintf("\n%~insufficient number of processes in the system! only %d slave processes are created\n", i);
@@ -31,38 +31,32 @@ _main(void)
 	while (numOfBlockedProcesses != numOfSlaves)
 	{
 		env_sleep(1000);
-
 		if (cnt == numOfSlaves)
 		{
 			panic("%~test channels failed! unexpected number of blocked slaves. Expected = %d, Current = %d", numOfSlaves, numOfBlockedProcesses);
 		}
 		sys_utilities("__GetChanQueueSize__", (uint32)(&numOfBlockedProcesses));
-
 		cnt++ ;
-
 	}
 
 	rsttst();
 
-	//Wakeup one
-	sys_utilities("__WakeupOne__", 0);
+	//Wakeup all
+	sys_utilities("__WakeupAll__", 0);
 
 	//Wait until all slave finished
 	cnt = 0;
 	while (gettst() != numOfSlaves)
 	{
-		env_sleep(5000);
-
+		env_sleep(1000);
 		if (cnt == numOfSlaves)
 		{
 			panic("%~test channels failed! not all slaves finished");
 		}
-
 		cnt++ ;
 	}
 
-	cprintf("%~\n\nCongratulations!! Test of Channel (sleep & wakeup ONE) completed successfully!!\n\n");
-
+	cprintf("%~\n\nCongratulations!! Test of Channel (sleep & wakeup ALL) completed successfully!!\n\n");
 
 	return;
 }

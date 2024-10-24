@@ -30,9 +30,29 @@ void sleep(struct Channel *chan, struct spinlock* lk)
 {
 	//TODO: [PROJECT'24.MS1 - #10] [4] LOCKS - sleep
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("sleep is not implemented yet");
+	//panic("sleep is not implemented yet");
 	//Your Code is Here...
 
+	    acquire_spinlock(&(ProcessQueues.qlock));
+		struct Env *env= get_cpu_proc();
+		enqueue(&(chan->queue),env);
+		env->env_status = ENV_BLOCKED;
+		release_spinlock(lk);
+		sched();
+		release_spinlock(&(ProcessQueues.qlock));
+		acquire_spinlock(lk);
+
+    /*
+     * lock = 1
+     *
+     * struct Env =  get_cpu_proc();
+     * enqueue(struct Env_Queue* queue, struct Env* env);
+     * env->env_status = env_blocked
+     * release_spinlock(struct spinlock *lk)
+     * sched();
+     * acquire_spinlock(struct spinlock *lk)
+     *
+     */
 }
 
 //==================================================
@@ -46,8 +66,21 @@ void wakeup_one(struct Channel *chan)
 {
 	//TODO: [PROJECT'24.MS1 - #11] [4] LOCKS - wakeup_one
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("wakeup_one is not implemented yet");
+	//panic("wakeup_one is not implemented yet");
 	//Your Code is Here...
+	acquire_spinlock(&(ProcessQueues.qlock));
+	struct Env *env = dequeue(&(chan->queue));
+	if(env != NULL){
+	sched_insert_ready0(env);
+	env->env_status = ENV_READY;
+	}
+	release_spinlock(&(ProcessQueues.qlock));
+	/*
+	 * env = deque
+	 * sched_insert_ready0(struct Env* p);
+	 * env->env_status = ENV_READY = 1
+	 */
+
 }
 
 //====================================================
@@ -60,10 +93,23 @@ void wakeup_one(struct Channel *chan)
 
 void wakeup_all(struct Channel *chan)
 {
+
 	//TODO: [PROJECT'24.MS1 - #12] [4] LOCKS - wakeup_all
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("wakeup_all is not implemented yet");
+	//panic("wakeup_all is not implemented yet");
 	//Your Code is Here...
-
+	acquire_spinlock(&(ProcessQueues.qlock));
+	while(queue_size(&(chan->queue))){
+		struct Env *env = dequeue(&(chan->queue));
+		sched_insert_ready0(env);
+		env->env_status = ENV_READY;
+	}
+	release_spinlock(&(ProcessQueues.qlock));
+	 /*
+	  * while( queue_size(struct Env_Queue* queue) ){
+		 * env = struct Env* dequeue(struct Env_Queue* queue);
+		 * sched_insert_ready0(struct Env* p);
+		 * env->env_status = ENV_READY = 1
+		 * }
+		 */
 }
-
