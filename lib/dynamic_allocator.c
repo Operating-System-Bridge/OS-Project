@@ -380,8 +380,6 @@ void *realloc_block_FF(void* va, uint32 new_size)
 	//panic("realloc_block_FF is not implemented yet");
 	//Your Code is Here...
 
-	/*if(is_free_block(va))
-	return NULL;*/
 
     if(va != NULL && !new_size)
     {
@@ -399,20 +397,30 @@ void *realloc_block_FF(void* va, uint32 new_size)
     	return NULL;
     }
 
+    /*block size must be even and at least 16 bytes*/
     if (new_size % 2 != 0) new_size++;
 	if (new_size < DYN_ALLOC_MIN_BLOCK_SIZE)
 		new_size = DYN_ALLOC_MIN_BLOCK_SIZE ;
 
+	/*adding meta data to block size*/
 	new_size += 8;
 
+	/*size of allocated block*/
     uint32 actual_size = get_block_size(va);
     void *next_block = (char*)va + actual_size;
 	uint32 next_block_size = get_block_size(next_block);
+	/*next block is free or not*/
 	uint32 next_block_statue = is_free_block(next_block);
+
     if(new_size > actual_size)
     {
+    	/* the next block is free and size of it can hold the rest of new size*/
         if(next_block_statue && next_block_size >= new_size - actual_size)
         {
+        	/*
+        	   if the rest of next block size more than 16 bytes
+        	   then split the next block to allocated block and free block
+        	*/
         	if(next_block_size - (new_size - actual_size) >= 16)
         	{
         		set_block_data(va, new_size, 1);
@@ -421,6 +429,7 @@ void *realloc_block_FF(void* va, uint32 new_size)
         		LIST_INSERT_AFTER(&freeBlocksList, (struct BlockElement*)next_block, new_free_block);
         		LIST_REMOVE(&freeBlocksList, (struct BlockElement*)next_block);
         	}
+        	/* take the size of the entire next block*/
         	else
         	{
         		set_block_data(va, actual_size + next_block_size, 1);
@@ -431,13 +440,17 @@ void *realloc_block_FF(void* va, uint32 new_size)
         }
         else
         {
+        	/*copy the data of the allocated block*/
         	char arr[actual_size];
         	for(int i=0 ; i < actual_size ; i++)
         	{
         		arr[i] = *((char*)va + i);
         	}
+
         	free_block(va);
         	void *new_block_address = alloc_block_FF(new_size - 8);
+
+        	/*paste the data of the allocated block to the new block after reallocation*/
         	for(int i=0 ; i < actual_size; i++)
         	{
         		*((char*)new_block_address + i) = arr[i];
@@ -448,10 +461,15 @@ void *realloc_block_FF(void* va, uint32 new_size)
     }
     else
     {
+    	/*if the rest of actual size more than or equal to 16 bytes*/
     	if(actual_size - new_size >= 16)
     	{
     		set_block_data(va,new_size,1);
-
+            /*
+                 if the next block is also free
+                 then split block to allocated block and free block and
+                 merge the free block with the next block
+            */
     		if(!next_block_statue)
     		{
     			set_block_data((void*)((char*)va + new_size),actual_size - new_size, 0);
@@ -469,6 +487,10 @@ void *realloc_block_FF(void* va, uint32 new_size)
 				else
 				LIST_INSERT_HEAD(&freeBlocksList, currentBlock);
     		}
+    		/*
+    		     if next block is not free
+    		     then split the block
+    		*/
     		else
     		{
     			set_block_data((void*)((char*)va + new_size),(actual_size - new_size) + next_block_size, 0);
@@ -476,6 +498,11 @@ void *realloc_block_FF(void* va, uint32 new_size)
     			LIST_REMOVE(&freeBlocksList, (struct BlockElement*)next_block);
     		}
     	}
+
+    	/*
+    	    if the rest of actual size is less than 16 bytes
+    	    then return the address of allocated block
+    	*/
 
     	return va;
     }
