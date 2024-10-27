@@ -380,6 +380,9 @@ void *realloc_block_FF(void* va, uint32 new_size)
 	//panic("realloc_block_FF is not implemented yet");
 	//Your Code is Here...
 
+	/*if(is_free_block(va))
+	return NULL;*/
+
     if(va != NULL && !new_size)
     {
     	free_block(va);
@@ -428,8 +431,18 @@ void *realloc_block_FF(void* va, uint32 new_size)
         }
         else
         {
+        	char arr[actual_size];
+        	for(int i=0 ; i < actual_size ; i++)
+        	{
+        		arr[i] = *((char*)va + i);
+        	}
         	free_block(va);
-        	return alloc_block_FF(new_size - 8);
+        	void *new_block_address = alloc_block_FF(new_size - 8);
+        	for(int i=0 ; i < actual_size; i++)
+        	{
+        		*((char*)new_block_address + i) = arr[i];
+        	}
+        	return new_block_address;
         }
 
     }
