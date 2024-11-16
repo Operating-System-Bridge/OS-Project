@@ -14,7 +14,34 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 {
 	//TODO: [PROJECT'24.MS2 - #01] [1] KERNEL HEAP - initialize_kheap_dynamic_allocator
 	// Write your code here, remove the panic and write your code
-	panic("initialize_kheap_dynamic_allocator() is not implemented yet...!!");
+	//panic("initialize_kheap_dynamic_allocator() is not implemented yet...!!");
+	/*
+	 * Return:
+       On success: 0
+       Otherwise (if no memory OR initial size exceed the given limit): kernel should panic()
+	 *
+	 */
+	if(daStart + initSizeToAllocate > daLimit){
+		panic("no memory");
+	}
+	//1- Initialize the block allocator of kernel heap with the given start address, size & limit
+	kheap_st = daStart;
+	kheap_sbrk =  (daStart + initSizeToAllocate);
+	kheap_hlim =  daLimit;
+
+	//2- All pages in the given range should be allocated and mapped
+    for(uint32 it = kheap_st;it!=kheap_sbrk;it+=PAGE_SIZE ){
+    	 struct FrameInfo *ptr_frame_info;
+    	 int temp = allocate_frame(&ptr_frame_info) ;
+         if(temp!=0){
+        	 panic("");
+         }
+         map_frame(ptr_page_directory,ptr_frame_info,it,PERM_WRITEABLE);
+    }
+
+    //3- Remember: call the initialize_dynamic_allocator(..) to complete the initialization
+    initialize_dynamic_allocator (daStart,initSizeToAllocate);
+    return 0;
 }
 
 void* sbrk(int numOfPages)
