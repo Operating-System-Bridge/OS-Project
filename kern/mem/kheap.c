@@ -37,6 +37,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
         	 panic("");
          }
          map_frame(ptr_page_directory,ptr_frame_info,it,PERM_WRITEABLE);
+         ptr_frame_info->va=it;
     }
 
     //3- Remember: call the initialize_dynamic_allocator(..) to complete the initialization
@@ -107,10 +108,10 @@ unsigned int kheap_virtual_address(unsigned int physical_address)
 	//panic("kheap_virtual_address() is not implemented yet...!!");
 	 unsigned int off=physical_address%PAGE_SIZE;//offset
 	 unsigned int framenum=physical_address-off;
-	 struct FrameInfo *frameToBeFound=to_frame_info(framenum);
-	 unsigned int va=frameToBeFound->va;
-	 if(frameToBeFound->references !=0){
-	      return frameToBeFound->va+off;
+	 struct FrameInfo *frame=to_frame_info(framenum);
+	 unsigned int va=frame->va;
+	 if(frame->references !=0){
+	      return frame->va+off;
 	     }
 
 	//return the virtual address corresponding to given physical_address
