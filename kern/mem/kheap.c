@@ -3,6 +3,11 @@
 #include <inc/memlayout.h>
 #include <inc/dynamic_allocator.h>
 #include "memory_manager.h"
+//2017
+#define DYNAMIC_ALLOCATOR_DS 0 //ROUNDUP(NUM_OF_KHEAP_PAGES * sizeof(struct MemBlock), PAGE_SIZE)
+#define INITIAL_KHEAP_ALLOCATIONS (DYNAMIC_ALLOCATOR_DS) //( + KERNEL_SHARES_ARR_INIT_SIZE + KERNEL_SEMAPHORES_ARR_INIT_SIZE) //
+#define INITIAL_BLOCK_ALLOCATIONS ((2*sizeof(int) + MAX(num_of_ready_queues * sizeof(uint8), DYN_ALLOC_MIN_BLOCK_SIZE)) + (2*sizeof(int) + MAX(num_of_ready_queues * sizeof(struct Env_Queue), DYN_ALLOC_MIN_BLOCK_SIZE)))
+#define ACTUAL_START ((KERNEL_HEAP_START + DYN_ALLOC_MAX_SIZE + PAGE_SIZE) + INITIAL_KHEAP_ALLOCATIONS)
 
 //Initialize the dynamic allocator of kernel heap with the given start address, size & limit
 //All pages in the given range should be allocated
@@ -70,11 +75,54 @@ void* sbrk(int numOfPages)
 
 void* kmalloc(unsigned int size)
 {
+
+	// block allocation ?
+		if(size <= DYN_ALLOC_MAX_BLOCK_SIZE){
+			// use "isKHeapPlacementStrategyFIRSTFIT() ..." functions to check the current strategy
+			if(isKHeapPlacementStrategyFIRSTFIT())
+			{	return alloc_block_FF(size);}
+			else if(isKHeapPlacementStrategyBESTFIT())
+			{return alloc_block_BF(size);}
+			else if(isKHeapPlacementStrategyNEXTFIT())
+			{return alloc_block_NF(size);}
+			else if(isKHeapPlacementStrategyWORSTFIT())
+			{return alloc_block_WF(size);}
+		}
+
+	//page allocation
+	uint32 numOfPages = ROUNDUP(size, PAGE_SIZE)/PAGE_SIZE;
+	//kpanic_into_prompt("size %d, numof pages %d",size,numOfPages);
+	uint32 l = kheap_hlim + PAGE_SIZE;
+	uint32 end = KERNEL_HEAP_MAX;
+	uint32 cur=0;// number of curr continuous free pages
+	uint32 *tempP ;//ptr_page_table
+	for(uint32 i =l;i<end;i+=PAGE_SIZE){	// curr va iterator
+		//struct FrameInfo * get_frame_info(uint32 *ptr_page_directory, uint32 virtual_address, uint32 **ptr_page_table)
+		struct FrameInfo *temp = get_frame_info(ptr_page_directory , i ,&tempP);
+		if(temp == NULL) {//page is free
+			cur++;
+		}else{//page is not free
+			l = i + PAGE_SIZE;
+			cur = 0;
+			continue;
+		}
+		if(cur == numOfPages){//reach the required value
+			for(uint32 j =0,l2 = l;j<numOfPages;j++,l2+=PAGE_SIZE){
+				struct FrameInfo *frame;
+				allocate_frame(&frame);
+				map_frame(ptr_page_directory,frame,l2,PERM_WRITEABLE);
+				frame->va=l2;
+
+			}
+			return (uint32*)l;
+
+		}
+	}
 	//TODO: [PROJECT'24.MS2 - #03] [1] KERNEL HEAP - kmalloc
 	// Write your code here, remove the panic and write your code
-	kpanic_into_prompt("kmalloc() is not implemented yet...!!");
+	//kpanic_into_prompt("kmalloc() is not implemented yet...!!");
 
-	// use "isKHeapPlacementStrategyFIRSTFIT() ..." functions to check the current strategy
+   return NULL;
 
 }
 
