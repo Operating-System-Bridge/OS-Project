@@ -112,7 +112,8 @@ void* kmalloc(unsigned int size)
 				allocate_frame(&frame);
 				map_frame(ptr_page_directory,frame,l2,PERM_WRITEABLE);
 				frame->va=l2;
-
+                frame->before = j;
+                frame->after = numOfPages-1-j;
 			}
 			return (uint32*)l;
 
@@ -130,8 +131,25 @@ void kfree(void* virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - #04] [1] KERNEL HEAP - kfree
 	// Write your code here, remove the panic and write your code
-	panic("kfree() is not implemented yet...!!");
+	//panic("kfree() is not implemented yet...!!");
+    if(virtual_address < (void *)kheap_st || virtual_address > (void *) KERNEL_HEAP_MAX){
+    	panic("");
+    }else if(virtual_address >= (void *)kheap_st && virtual_address < (void *)kheap_hlim ){
+    	free_block(virtual_address);
+    }else if(virtual_address >= (void *)(kheap_hlim + PAGE_SIZE) && virtual_address < (void *) KERNEL_HEAP_MAX ){
+    	uint32 *tempp;
+    	struct FrameInfo *frame = get_frame_info(ptr_page_directory , (uint32)virtual_address ,&tempp);
+    	uint32 curr_va = frame->va;
+    	for(uint32 i=0,it=curr_va;i<=frame->before;i++,it-=PAGE_SIZE){
+    		unmap_frame(ptr_page_directory,it);
+    	}
+    	for(uint32 i=0,it=curr_va+PAGE_SIZE;i<=frame->after;i++,it+=PAGE_SIZE){
+    	    		unmap_frame(ptr_page_directory,it);
+    	 }
 
+    }else{
+    	panic("");
+    }
 	//you need to get the size of the given allocation using its address
 	//refer to the project presentation and documentation for details
 

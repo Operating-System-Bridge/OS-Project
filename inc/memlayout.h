@@ -216,6 +216,10 @@ struct FrameInfo {
 	uint32 bufferedVA;
 	unsigned char isBuffered;
 	uint32 va;
+	//before = 0 -> start
+	//after = 0 -> end
+	uint32 before;
+	uint32 after;
 };
 
 #endif /* !__ASSEMBLER__ */
