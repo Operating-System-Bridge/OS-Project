@@ -63,12 +63,31 @@ void* sbrk(int numOfPages)
 	 */
 
 	//MS2: COMMENT THIS LINE BEFORE START CODING==========
-	return (void*)-1 ;
+//	return (void*)-1 ;
 	//====================================================
 
 	//TODO: [PROJECT'24.MS2 - #02] [1] KERNEL HEAP - sbrk
-	// Write your code here, remove the panic and write your code
-	panic("sbrk() is not implemented yet...!!");
+	if(numOfPages == 0)
+		return (void * )kheap_sbrk;
+	if(kheap_sbrk + numOfPages * PAGE_SIZE > kheap_hlim)
+		return (void *) -1;
+	int cnt = numOfPages;
+	for(uint32 curVa = kheap_sbrk; cnt >= 1 && curVa < kheap_hlim; cnt--, curVa += PAGE_SIZE)
+	{
+		struct FrameInfo *ptr_frame_info;
+		int temp = allocate_frame(&ptr_frame_info) ;
+		if(temp!=0)
+			return (void*)-1;
+		 map_frame(ptr_page_directory,ptr_frame_info,curVa,PERM_WRITEABLE);
+		 ptr_frame_info->va=curVa;
+	}
+
+	uint32 ret = kheap_sbrk;
+	END_BLK = (uint32 *)(numOfPages * PAGE_SIZE + (char *)END_BLK);
+	*END_BLK = 1;
+	kheap_sbrk += numOfPages * PAGE_SIZE;
+	return (void * )(ret);
+
 }
 
 //TODO: [PROJECT'24.MS2 - BONUS#2] [1] KERNEL HEAP - Fast Page Allocator
@@ -132,19 +151,26 @@ void kfree(void* virtual_address)
 	//TODO: [PROJECT'24.MS2 - #04] [1] KERNEL HEAP - kfree
 	// Write your code here, remove the panic and write your code
 	//panic("kfree() is not implemented yet...!!");
-    if(virtual_address < (void *)kheap_st || virtual_address > (void *) KERNEL_HEAP_MAX){
+	uint32 page_alloc_st = kheap_hlim + PAGE_SIZE;
+    if(virtual_address < (void *)kheap_st || virtual_address > (void *) (KERNEL_HEAP_MAX)){
     	panic("");
-    }else if(virtual_address >= (void *)kheap_st && virtual_address < (void *)kheap_hlim ){
+    }else if(virtual_address >= (void *)(kheap_st) && virtual_address < (void *)(kheap_sbrk) ){
     	free_block(virtual_address);
-    }else if(virtual_address >= (void *)(kheap_hlim + PAGE_SIZE) && virtual_address < (void *) KERNEL_HEAP_MAX ){
+    }else if(virtual_address >= (void *)(page_alloc_st) && virtual_address < (void *) KERNEL_HEAP_MAX ){
     	uint32 *tempp;
-    	struct FrameInfo *frame = get_frame_info(ptr_page_directory , (uint32)virtual_address ,&tempp);
-    	uint32 curr_va = frame->va;
-    	for(uint32 i=0,it=curr_va;i<=frame->before;i++,it-=PAGE_SIZE){
+    //	struct FrameInfo *frame = get_frame_info(ptr_page_directory , (uint32)virtual_address ,&tempp);
+    	uint32 curr_va = get_frame_info(ptr_page_directory , (uint32)virtual_address ,&tempp)->va;
+    	uint32 before = get_frame_info(ptr_page_directory , (uint32)virtual_address ,&tempp)->before;
+    	uint32 after = get_frame_info(ptr_page_directory , (uint32)virtual_address ,&tempp)->after;
+    	//kpanic_into_prompt("frame ref ,%d",frame->references);
+    	//unmap_frame(ptr_page_directory,curr_va);
+    	for(uint32 i=0,it=curr_va-PAGE_SIZE;i<before;i++,it-=PAGE_SIZE){
     		unmap_frame(ptr_page_directory,it);
+    		//cprintf("before\n");
     	}
-    	for(uint32 i=0,it=curr_va+PAGE_SIZE;i<=frame->after;i++,it+=PAGE_SIZE){
-    	    		unmap_frame(ptr_page_directory,it);
+    	for(uint32 i=0; i<= after;i++,curr_va+=PAGE_SIZE){
+    	    		unmap_frame(ptr_page_directory,curr_va);
+    	    	//	cprintf("after\n");
     	 }
 
     }else{
@@ -153,10 +179,12 @@ void kfree(void* virtual_address)
 	//you need to get the size of the given allocation using its address
 	//refer to the project presentation and documentation for details
 
+
 }
 
 unsigned int kheap_physical_address(unsigned int virtual_address)
 {
+
 	//TODO: [PROJECT'24.MS2 - #05] [1] KERNEL HEAP - kheap_physical_address
 	// Write your code here, remove the panic and write your code
 	//panic("kheap_physical_address() is not implemented yet...!!");
@@ -173,6 +201,7 @@ unsigned int kheap_physical_address(unsigned int virtual_address)
 
 		//EFFICIENT IMPLEMENTATION ~O(1) IS REQUIRED ==================
 		 return 0;
+
 
 }
 

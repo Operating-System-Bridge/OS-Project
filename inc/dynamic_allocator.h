@@ -54,6 +54,7 @@ void print_blocks_list(struct MemBlock_LIST list);
 //Required Functions
 //In KernelHeap: should be implemented inside kern/mem/kheap.c
 //In UserHeap: should be implemented inside lib/uheap.c
+uint32 * END_BLK;
 void* sbrk(int numOfPages);
 
 void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpace);
