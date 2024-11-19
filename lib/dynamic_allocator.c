@@ -107,6 +107,7 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 	struct BlockElement* FirstFreeBlock = (struct BlockElement*)(daStart + 2 * sizeof(int));
 	uint32 *BEG_BLOCK = (uint32*)(daStart);
 	uint32 *END_BLOCK = (uint32*)(daStart + initSizeOfAllocatedSpace - sizeof(int));
+	END_BLK = END_BLOCK;
 	*BEG_BLOCK = *END_BLOCK = 1;
 	uint32 *HEADER = (uint32*)(daStart + sizeof(int));
 	uint32 *FOOTER = (uint32*)(daStart + initSizeOfAllocatedSpace - 2 * sizeof(int));
@@ -219,10 +220,41 @@ void *alloc_block_FF(uint32 size)
 
 	if(action == -1)
 	{
-		sbrk(0);
-		return NULL;
-	}
+		uint32 numOfPages = (size + PAGE_SIZE - 1) / PAGE_SIZE;
+		void *ret = sbrk(numOfPages);
+		uint32 extraSize = numOfPages * PAGE_SIZE;
 
+		if(ret == (void* )-1)
+			return NULL;
+		struct BlockElement *prv = NULL;
+		if(LIST_SIZE(&freeBlocksList) > 0)
+			prv = LIST_LAST(&freeBlocksList);
+		struct BlockElement *cur = (struct BlockElement *)( ret);
+		LIST_INSERT_TAIL(&freeBlocksList, cur);
+		set_block_data(cur, extraSize, 0);
+
+		bool hasPrv = (prv != NULL);
+		if(prv != NULL)
+			hasPrv &= ((struct BlockElement *)((char *)cur - get_block_size(prv)) == prv);
+
+		if(hasPrv)
+		{
+			LIST_REMOVE(&freeBlocksList, cur);
+			uint32 size = get_block_size(prv);
+			set_block_data(prv, size + extraSize, 0);
+		}
+
+
+	}
+	LIST_FOREACH(targetBlock, &freeBlocksList)
+	{
+		curSize = get_block_size(targetBlock);
+		if(curSize >= reqSize)
+		{
+			action = (curSize - reqSize < 4 * sizeof(int));
+			break;
+		}
+	}
 	uint32 settingSize = (action ? curSize : reqSize);
 
 	if(!action)
@@ -234,7 +266,7 @@ void *alloc_block_FF(uint32 size)
 
 	set_block_data(targetBlock, settingSize, 1);
 	LIST_REMOVE(&freeBlocksList, targetBlock);
-//	print_blocks_list(freeBlocksList);
+
 	return targetBlock;
 }
 //=========================================

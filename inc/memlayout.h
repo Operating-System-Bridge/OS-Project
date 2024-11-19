@@ -15,7 +15,7 @@
  */
 
 /*2016*/
-#define USE_KHEAP 0
+#define USE_KHEAP 1
 
 // Global descriptor numbers
 #define GD_KT     0x08     // kernel text
@@ -203,18 +203,24 @@ LIST_HEAD(FrameInfo_List, FrameInfo);
 typedef LIST_ENTRY(FrameInfo) Page_LIST_entry_t;
 
 struct FrameInfo {
-	/* free list link */
-	Page_LIST_entry_t prev_next_info;
+    /* free list link */
+    Page_LIST_entry_t prev_next_info;
 
-	// references is the count of pointers (usually in page table entries)
-	// to this page, for frames allocated using allocate_frame.
-	// frames allocated at boot time using memory_manager.c's
-	// boot_allocate_space do not have valid reference count fields.
-	uint16 references;
+    // references is the count of pointers (usually in page table entries)
+    // to this page, for frames allocated using allocate_frame.
+    // frames allocated at boot time using memory_manager.c's
+    // boot_allocate_space do not have valid reference count fields.
+    uint16 references;
 
-	struct Env *proc;
-	uint32 bufferedVA;
-	unsigned char isBuffered;
+    struct Env *proc;
+    uint32 bufferedVA;
+    unsigned char isBuffered;
+    uint32 va;
+    //before = 0 -> start
+    //after = 0 -> end
+    uint32 before;
+    uint32 after;
+
 };
 
 #endif /* !__ASSEMBLER__ */
