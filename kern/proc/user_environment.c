@@ -867,14 +867,17 @@ void* create_user_kern_stack(uint32* ptr_user_page_directory)
 #if USE_KHEAP
 	//TODO: [PROJECT'24.MS2 - #07] [2] FAULT HANDLER I - create_user_kern_stack
 	// Write your code here, remove the panic and write your code
-	panic("create_user_kern_stack() is not implemented yet...!!");
-
 	//allocate space for the user kernel stack.
 	//remember to leave its bottom page as a GUARD PAGE (i.e. not mapped)
 	//return a pointer to the start of the allocated space (including the GUARD PAGE)
 	//On failure: panic
-
-
+	void* stack = kmalloc(KERNEL_STACK_SIZE);
+	pt_set_page_permissions(ptr_user_page_directory, (uint32)stack, 0, PERM_PRESENT);
+	for(int i = PAGE_SIZE; i < KERNEL_STACK_SIZE; i+= PAGE_SIZE)
+		pt_set_page_permissions(ptr_user_page_directory, (uint32)stack, PERM_PRESENT, 0);
+	if(stack != NULL)
+		return stack;
+	panic("Unable to create stack");
 #else
 	if (KERNEL_HEAP_MAX - __cur_k_stk < KERNEL_STACK_SIZE)
 		panic("Run out of kernel heap!! Unable to create a kernel stack for the process. Can't create more processes!");
