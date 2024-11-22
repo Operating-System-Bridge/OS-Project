@@ -110,9 +110,20 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 	//TODO: [PROJECT'24.MS2 - #19] [4] SHARED MEMORY [KERNEL SIDE] - createSharedObject()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	panic("createSharedObject is not implemented yet");
-	//Your Code is Here...
-
 	struct Env* myenv = get_cpu_proc(); //The calling environment
+	//Your Code is Here...
+	// check if the object already exists => E_SHARED_MEM_EXISTS
+
+	// allocate & initialize
+
+	// add to shares_list
+
+	// map va with WRITABLE perm.
+
+	// add allocated frames to frames storage
+
+	// if failed => E_NO_SHARE
+
 }
 
 

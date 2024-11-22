@@ -53,8 +53,40 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 	//==============================================================
 	//TODO: [PROJECT'24.MS2 - #18] [4] SHARED MEMORY [USER SIDE] - smalloc()
 	// Write your code here, remove the panic and write your code
-	panic("smalloc() is not implemented yet...!!");
+	// apply FF on 4 KB boundaries
+	uint32 numPages = (size+PAGE_SIZE-1)/ PAGE_SIZE;
+	uint32 start = USER_HEAP_START; // user heap start
+	uint32 end = USER_HEAP_MAX;  // user heap end
+	uint32 curr = 0; // consecutive free pages
+	uint32 *tempP;
+	for(uint32 i =start;i<end;i+=PAGE_SIZE){
+
+		uint32 *temp = NULL; // not done yet !!
+		if(temp == NULL){ // free page
+			curr++;
+		}else{
+			start = i + PAGE_SIZE;
+			curr = 0;
+			continue;
+		}
+	}
+	if(curr == numPages){
+		// space found , call sys_create
+		int result = sys_createSharedObject(sharedVarName,size,isWritable, (uint32*)start);
+		// if creation failed, return NULL
+		if(result == E_SHARED_MEM_EXISTS || result == E_NO_SHARE){
+			return NULL;
+
+		}
+		// return the va
+		return (uint32*)start;
+	}
+	// no space found , return NULL
 	return NULL;
+
+
+	//panic("smalloc() is not implemented yet...!!");
+
 }
 
 //========================================
@@ -88,6 +120,7 @@ void sfree(void* virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [USER SIDE] - sfree()
 	// Write your code here, remove the panic and write your code
+
 	panic("sfree() is not implemented yet...!!");
 }
 
