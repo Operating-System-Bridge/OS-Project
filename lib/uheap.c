@@ -62,9 +62,10 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 //========================================
 void* sget(int32 ownerEnvID, char *sharedVarName)
 {
-	//TODO: [PROJECT'24.MS2 - #20] [4] SHARED MEMORY [USER SIDE] - sget()
-	// Write your code here, remove the panic and write your code
-	panic("sget() is not implemented yet...!!");
+//	//TODO: [PROJECT'24.MS2 - #20] [4] SHARED MEMORY [USER SIDE] - sget()
+//	// Write your code here, remove the panic and write your code
+//	panic("sget() is not implemented yet...!!");
+
 	return NULL;
 }
 
