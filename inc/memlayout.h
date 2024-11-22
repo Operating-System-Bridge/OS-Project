@@ -220,6 +220,8 @@ struct FrameInfo {
     //after = 0 -> end
     uint32 before;
     uint32 after;
+    struct FrameInfo *nxt;
+    struct FrameInfo *bef;
 
 };
 
