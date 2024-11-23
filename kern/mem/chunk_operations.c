@@ -156,7 +156,10 @@ void* sys_sbrk(int numOfPages)
 		if(ret + numOfPages * PAGE_SIZE > env->hlimit)
 			return (void*) -1;
 
-		uint32 newBrk = ret + numOfPages * PAGE_SIZE;
+		uint32 newBrk = ret + numOfPages * PAGE_SIZE - sizeof(int);
+		uint32* ptr = (uint32*)newBrk;
+		*ptr = 1;
+		newBrk += sizeof(int);
 
 		env->brk = newBrk;
 	}
