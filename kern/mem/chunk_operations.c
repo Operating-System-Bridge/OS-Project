@@ -167,7 +167,8 @@ void* sys_sbrk(int numOfPages)
 			*ptr = 1;
 			newBrk += sizeof(int);
 			env->brk = newBrk;
-			allocate_user_mem(env, ROUNDUP(ret,PAGE_SIZE), numOfPages * PAGE_SIZE);
+			//allocate_user_mem(env, ROUNDUP(ret,PAGE_SIZE), numOfPages * PAGE_SIZE);
+			// This leads to an additional page allocated
 		}
 
 

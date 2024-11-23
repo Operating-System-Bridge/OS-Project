@@ -47,15 +47,17 @@ void* malloc(uint32 size)
 	int cnt = 0;
 	int numOfPages = (size + PAGE_SIZE - 1) / PAGE_SIZE; // # of needed pages
 	char* va = (char*)startAddress;
+	char* potentialStart = (char*) startAddress;
 	bool foundEnough = 0; // If this is 0 after the for loop return -1
 
 	while(va < (char*)USER_HEAP_MAX)
 	{
-		int val = *va;
-		if(val != 0)
+		int i = (int)(va - (char*)startAddress) / PAGE_SIZE;
+//		cprintf("\n%d\n", marked[i]);
+		if(marked[i])
 		{
 			cnt = 0;
-			va += PAGE_SIZE * val;
+			potentialStart = va + PAGE_SIZE;
 		}
 		else
 			cnt++;
@@ -63,15 +65,18 @@ void* malloc(uint32 size)
 		if(cnt == numOfPages)
 		{
 			foundEnough = 1;
-			sys_allocate_user_mem((uint32)va, numOfPages * PAGE_SIZE);
+			for(int j = 0; j < cnt; j++)
+				marked[i - j] = 1;
+			sys_allocate_user_mem((uint32)potentialStart, numOfPages * PAGE_SIZE);
 			break;
 		}
+		va += PAGE_SIZE;
 	}
 
 	if(!foundEnough)
 		return NULL;
 
-	return (void*)va;
+	return (void*)potentialStart;
 }
 
 //=================================
