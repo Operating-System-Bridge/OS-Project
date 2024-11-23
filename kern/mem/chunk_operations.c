@@ -143,26 +143,33 @@ void* sys_sbrk(int numOfPages)
 	/*====================================*/
 	struct Env* env = get_cpu_proc(); //the current running Environment to adjust its break limit
 
+
 	uint32 ret = env->brk;
+	if(numOfPages==0)
+		return (uint32*)ret;
+	//corner cases
+	if(ret + numOfPages * PAGE_SIZE > env->hlimit)
+				return (void*) -1;
+	if(ret + numOfPages * PAGE_SIZE < env->strt)
+				return (void*) -1;
 
 	// There's a -1 if there's no memory, I don't really know what "No memory means"
 	// I will just deal with the hard limit exceeded case and check later.
 	// After checking it says that if there's isn't enough memory...
 	// I guess this means that if there's 4 pages left and I need 5 then I should
 	// just return -1...
-
 	if(numOfPages > 0)
-	{
-		if(ret + numOfPages * PAGE_SIZE > env->hlimit)
-			return (void*) -1;
+		{
+			if(ret + numOfPages * PAGE_SIZE > env->hlimit)
+				return (void*) -1;
+			uint32 newBrk = ret + numOfPages * PAGE_SIZE - sizeof(int);
+			uint32* ptr = (uint32*)newBrk;
+			*ptr = 1;
+			newBrk += sizeof(int);
+			env->brk = newBrk;
+			allocate_user_mem(env, ROUNDUP(ret,PAGE_SIZE), numOfPages * PAGE_SIZE);
+		}
 
-		uint32 newBrk = ret + numOfPages * PAGE_SIZE - sizeof(int);
-		uint32* ptr = (uint32*)newBrk;
-		*ptr = 1;
-		newBrk += sizeof(int);
-
-		env->brk = newBrk;
-	}
 
 	return (void*)ret;
 }
@@ -181,20 +188,19 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 	//panic("allocate_user_mem() is not implemented yet...!!");
 
 	/* page size is 4KB = 2^12 */
-	uint32 page_size = (1 << 12);
-	uint32 pages = size/page_size;
+	//uint32 page_size = (1 << 12);
 
+	uint32 pages = size/PAGE_SIZE;
+	uint32 *ptr_page_table = NULL;
 	for(int i=0 ; i < pages ; i++)
 	{
-		uint32 *ptr_page_table = NULL;
-
 		if(get_page_table(ptr_page_directory, virtual_address, &ptr_page_table) == TABLE_NOT_EXIST)
 		{
 			ptr_page_table = create_page_table(ptr_page_directory, virtual_address);
 		}
 
 		ptr_page_table[PTX(virtual_address)] |= PERM_MARKED;
-		virtual_address += page_size;
+		virtual_address += PAGE_SIZE;
 	}
 }
 

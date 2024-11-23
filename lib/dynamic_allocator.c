@@ -190,6 +190,7 @@ void *alloc_block_FF(uint32 size)
 			uint32 required_size = size + 2*sizeof(int) /*header & footer*/ + 2*sizeof(int) /*da begin & end*/ ;
 			uint32 da_start = (uint32)sbrk(ROUNDUP(required_size, PAGE_SIZE)/PAGE_SIZE);
 			uint32 da_break = (uint32)sbrk(0);
+		//	cprintf("%d start \n %d brk \n diff %d \n",da_start,da_break,da_break - da_start);
 			initialize_dynamic_allocator(da_start, da_break - da_start);
 		}
 	}
@@ -200,7 +201,7 @@ void *alloc_block_FF(uint32 size)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
     //panic("alloc_block_FF is not implemented yet");
 	//Your Code is Here...
-
+     //cprintf("alloc size %d",size);
 	//! Adding the size of the header and footer
 	uint32 reqSize = size + 2 * sizeof(int);
 
