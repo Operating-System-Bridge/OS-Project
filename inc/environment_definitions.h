@@ -121,7 +121,9 @@ struct Env {
 
 	//=======================================================================
 	//TODO: [PROJECT'24.MS2 - #10] [3] USER HEAP - add suitable code here
-
+	uint32 strt; // Start of the heap for this process
+	uint32 brk;  // The current break pointer
+	uint32 hlimit; // The hard limit for the heap of this process
 	//=======================================================================
 	//for page file management
 	uint32* disk_env_pgdir;

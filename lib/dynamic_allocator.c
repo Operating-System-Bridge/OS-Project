@@ -306,8 +306,30 @@ void *alloc_block_BF(uint32 size)
 
 	if(difference == -1)
 	{
-		sbrk(0);
-		return NULL;
+		uint32 numOfPages = (size + PAGE_SIZE - 1) / PAGE_SIZE;
+		void *ret = sbrk(numOfPages);
+		uint32 extraSize = numOfPages * PAGE_SIZE;
+
+		if(ret == (void* )-1)
+			return NULL;
+		struct BlockElement *prv = NULL;
+		if(LIST_SIZE(&freeBlocksList) > 0)
+			prv = LIST_LAST(&freeBlocksList);
+		struct BlockElement *cur = (struct BlockElement *)( ret);
+		LIST_INSERT_TAIL(&freeBlocksList, cur);
+		set_block_data(cur, extraSize, 0);
+
+		bool hasPrv = (prv != NULL);
+		if(prv != NULL)
+			hasPrv &= ((struct BlockElement *)((char *)cur - get_block_size(prv)) == prv);
+
+		if(hasPrv)
+		{
+			LIST_REMOVE(&freeBlocksList, cur);
+			uint32 size = get_block_size(prv);
+			set_block_data(prv, size + extraSize, 0);
+		}
+
 	}
 
 	bool x = (targetSize - reqSize < 4 * sizeof(int));

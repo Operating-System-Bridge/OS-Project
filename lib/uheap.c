@@ -24,11 +24,54 @@ void* malloc(uint32 size)
 	//==============================================================
 	//TODO: [PROJECT'24.MS2 - #12] [3] USER HEAP [USER SIDE] - malloc()
 	// Write your code here, remove the panic and write your code
-	panic("malloc() is not implemented yet...!!");
+	//panic("malloc() is not implemented yet...!!");
 	return NULL;
 	//Use sys_isUHeapPlacementStrategyFIRSTFIT() and	sys_isUHeapPlacementStrategyBESTFIT()
 	//to check the current strategy
 
+	// Block Allocation
+
+	if(size <= DYN_ALLOC_MAX_BLOCK_SIZE)
+	{
+		if(sys_isUHeapPlacementStrategyFIRSTFIT())
+			return alloc_block_FF(size);
+		else if(sys_isUHeapPlacementStrategyBESTFIT())
+			return alloc_block_BF(size);
+	}
+
+	// Page Allocation
+
+	uint32 startAddress = myEnv->hlimit + PAGE_SIZE;
+	// Start of page allocator is after the hard limit with one page
+
+	int cnt = 0;
+	int numOfPages = (size + PAGE_SIZE - 1) / PAGE_SIZE; // # of needed pages
+	char* va = (char*)startAddress;
+	bool foundEnough = 0; // If this is 0 after the for loop return -1
+
+	while(va < (char*)USER_HEAP_MAX)
+	{
+		int val = *va;
+		if(val != 0)
+		{
+			cnt = 0;
+			va += PAGE_SIZE * val;
+		}
+		else
+			cnt++;
+
+		if(cnt == numOfPages)
+		{
+			foundEnough = 1;
+			sys_allocate_user_mem((uint32)va, numOfPages * PAGE_SIZE);
+			break;
+		}
+	}
+
+	if(!foundEnough)
+		return NULL;
+
+	return (void*)va;
 }
 
 //=================================

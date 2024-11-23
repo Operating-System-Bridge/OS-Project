@@ -874,7 +874,7 @@ void* create_user_kern_stack(uint32* ptr_user_page_directory)
 	void* stack = kmalloc(KERNEL_STACK_SIZE);
 	pt_set_page_permissions(ptr_user_page_directory, (uint32)stack, 0, PERM_PRESENT);
 	for(int i = PAGE_SIZE; i < KERNEL_STACK_SIZE; i+= PAGE_SIZE)
-		pt_set_page_permissions(ptr_user_page_directory, (uint32)stack, PERM_PRESENT, 0);
+		pt_set_page_permissions(ptr_user_page_directory, (uint32)stack + i, PERM_PRESENT, 0);
 	if(stack != NULL)
 		return stack;
 	panic("Unable to create stack");
@@ -915,6 +915,10 @@ void initialize_uheap_dynamic_allocator(struct Env* e, uint32 daStart, uint32 da
 	//	1) there's no initial allocations for the dynamic allocator of the user heap (=0)
 	//	2) call the initialize_dynamic_allocator(..) to complete the initialization
 	//panic("initialize_uheap_dynamic_allocator() is not implemented yet...!!");
+	e->strt = daStart;
+	e->brk = daStart; // This is an assumption because the initial block allocator size is 0
+	e->hlimit = daLimit;
+	initialize_dynamic_allocator(daStart, 0);
 }
 
 //==============================================================

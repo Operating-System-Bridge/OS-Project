@@ -139,11 +139,32 @@ void* sys_sbrk(int numOfPages)
 	//TODO: [PROJECT'24.MS2 - #11] [3] USER HEAP - sys_sbrk
 	/*====================================*/
 	/*Remove this line before start coding*/
-	return (void*)-1 ;
+	//return (void*)-1 ;
 	/*====================================*/
 	struct Env* env = get_cpu_proc(); //the current running Environment to adjust its break limit
 
+	uint32 ret = env->brk;
 
+	// There's a -1 if there's no memory, I don't really know what "No memory means"
+	// I will just deal with the hard limit exceeded case and check later.
+	// After checking it says that if there's isn't enough memory...
+	// I guess this means that if there's 4 pages left and I need 5 then I should
+	// just return -1...
+
+	if(numOfPages > 0)
+	{
+		if(ret + numOfPages * PAGE_SIZE > env->hlimit)
+			return (void*) -1;
+
+		uint32 newBrk = ret + numOfPages * PAGE_SIZE - sizeof(int);
+		uint32* ptr = (uint32*)newBrk;
+		*ptr = 1;
+		newBrk += sizeof(int);
+
+		env->brk = newBrk;
+	}
+
+	return (void*)ret;
 }
 
 //=====================================
