@@ -1,5 +1,5 @@
 #include <inc/lib.h>
-
+uint32 mazen[122879]={0};//marked - > va , unmarked -> 0
 //==================================================================================//
 //============================ REQUIRED FUNCTIONS ==================================//
 //==================================================================================//
@@ -20,7 +20,7 @@ void* malloc(uint32 size)
 {
 	//==============================================================
 	//DON'T CHANGE THIS CODE========================================
-	if (size == 0) return NULL ;
+	if (size == 0) return (void *)NULL ;
 	//==============================================================
 	//TODO: [PROJECT'24.MS2 - #12] [3] USER HEAP [USER SIDE] - malloc()
 	// Write your code here, remove the panic and write your code
@@ -45,38 +45,27 @@ void* malloc(uint32 size)
 	// Start of page allocator is after the hard limit with one page
 
 	int cnt = 0;
-	int numOfPages = (size + PAGE_SIZE - 1) / PAGE_SIZE; // # of needed pages
-	char* va = (char*)startAddress;
-	char* potentialStart = (char*) startAddress;
-	bool foundEnough = 0; // If this is 0 after the for loop return -1
-
-	while(va < (char*)USER_HEAP_MAX)
-	{
-		int i = (int)(va - (char*)startAddress) / PAGE_SIZE;
-//		cprintf("\n%d\n", marked[i]);
-		if(marked[i])
-		{
-			cnt = 0;
-			potentialStart = va + PAGE_SIZE;
-		}
-		else
+	int goal = ROUNDUP(size ,PAGE_SIZE) / PAGE_SIZE; // num of needed pages
+	for(uint32 i = startAddress,it=0;i<USER_HEAP_MAX;i+=PAGE_SIZE,it++){
+		//cprintf("it %d\n",it);
+		if(mazen[it]==0){
 			cnt++;
-
-		if(cnt == numOfPages)
-		{
-			foundEnough = 1;
-			for(int j = 0; j < cnt; j++)
-				marked[i - j] = 1;
-			sys_allocate_user_mem((uint32)potentialStart, numOfPages * PAGE_SIZE);
-			break;
+		}else{
+			startAddress = i + PAGE_SIZE;
+			cnt = 0;
 		}
-		va += PAGE_SIZE;
+		if(cnt==goal){
+			for(int j=0;j<goal;j++)
+				mazen[it-j]=startAddress;
+			sys_allocate_user_mem(startAddress, cnt * PAGE_SIZE);
+			return (void *)startAddress;
+		}
 	}
+	//char* va = (char*)startAddress;
+	//char* potentialStart = (char*) startAddress;
+	//bool foundEnough = 0; // If this is 0 after the for loop return -1
 
-	if(!foundEnough)
-		return NULL;
-
-	return (void*)potentialStart;
+   return (void *)NULL;
 }
 
 //=================================

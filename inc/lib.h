@@ -110,9 +110,6 @@ int 	sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 
 //2024
 void 	sys_utilities(char* utilityName, int value);
 
-#define MarkedPages (USER_HEAP_MAX - (myEnv->hlimit) - PAGE_SIZE) / PAGE_SIZE
-int marked[2000000];
-
 /* concurrency.c */
 void env_sleep(uint32 apprxMilliSeconds);
 uint32 busy_wait(uint32 loopMax);
