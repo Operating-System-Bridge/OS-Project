@@ -45,8 +45,8 @@ void* malloc(uint32 size)
 	// Start of page allocator is after the hard limit with one page
 
 	int cnt = 0;
-	int goal = ROUNDUP(size ,PAGE_SIZE) / PAGE_SIZE; // num of needed pages
-	for(uint32 i = startAddress,it=0;i<USER_HEAP_MAX;i+=PAGE_SIZE,it++){
+	uint32 goal = ROUNDUP(size ,PAGE_SIZE) / PAGE_SIZE; // num of needed pages
+	for(uint32 i = startAddress,it=0;i<(uint32)USER_HEAP_MAX;i+=PAGE_SIZE,it++){
 		//cprintf("it %d\n",it);
 		if(mazen[it]==0){
 			cnt++;
@@ -75,7 +75,27 @@ void free(void* virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - #14] [3] USER HEAP [USER SIDE] - free()
 	// Write your code here, remove the panic and write your code
-	panic("free() is not implemented yet...!!");
+	//panic("free() is not implemented yet...!!");
+	uint32 size = 0;
+	uint32 st_page =myEnv->hlimit + PAGE_SIZE;
+	if(virtual_address>=(void *)USER_HEAP_START && virtual_address < (void *)myEnv->brk){
+		free_block(virtual_address);
+	}else if(virtual_address>=(void *)st_page && virtual_address <(void *)USER_HEAP_MAX){
+		int done = 0;
+		for(int i=0;i<122879;i++){
+			if(mazen[i]==(uint32)virtual_address){
+				mazen[i]=0;
+				done = 1;
+				size+=PAGE_SIZE;
+			}else if(done==1){
+				break;
+			}
+		}
+	 sys_free_user_mem((uint32)virtual_address,size);
+
+	}else{
+	panic("invalid virtual address");
+	}
 }
 
 
