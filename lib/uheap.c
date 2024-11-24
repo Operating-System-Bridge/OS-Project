@@ -1,5 +1,5 @@
 #include <inc/lib.h>
-
+uint32 mazen[122879]={0};//marked - > va , unmarked -> 0
 //==================================================================================//
 //============================ REQUIRED FUNCTIONS ==================================//
 //==================================================================================//
@@ -20,15 +20,54 @@ void* malloc(uint32 size)
 {
 	//==============================================================
 	//DON'T CHANGE THIS CODE========================================
-	if (size == 0) return NULL ;
+	if (size == 0) return (void *)NULL ;
 	//==============================================================
 	//TODO: [PROJECT'24.MS2 - #12] [3] USER HEAP [USER SIDE] - malloc()
 	// Write your code here, remove the panic and write your code
-	panic("malloc() is not implemented yet...!!");
-	return NULL;
+	//panic("malloc() is not implemented yet...!!");
+	//return NULL;
 	//Use sys_isUHeapPlacementStrategyFIRSTFIT() and	sys_isUHeapPlacementStrategyBESTFIT()
 	//to check the current strategy
 
+	// Block Allocation
+	if(size <= DYN_ALLOC_MAX_BLOCK_SIZE)
+	{
+		if(sys_isUHeapPlacementStrategyFIRSTFIT())
+			return alloc_block_FF(size);
+		else if(sys_isUHeapPlacementStrategyBESTFIT())
+			return alloc_block_BF(size);
+
+	}
+	//	return (void *)NULL;
+
+
+	// Page Allocation
+
+	uint32 startAddress = myEnv->hlimit + PAGE_SIZE;
+	// Start of page allocator is after the hard limit with one page
+
+	int cnt = 0;
+	uint32 goal = ROUNDUP(size ,PAGE_SIZE) / PAGE_SIZE; // num of needed pages
+	for(uint32 i = startAddress,it=0;i<(uint32)USER_HEAP_MAX;i+=PAGE_SIZE,it++){
+		//cprintf("it %d\n",it);
+		if(mazen[it]==0){
+			cnt++;
+		}else{
+			startAddress = i + PAGE_SIZE;
+			cnt = 0;
+		}
+		if(cnt==goal){
+			for(int j=0;j<goal;j++)
+				mazen[it-j]=startAddress;
+			sys_allocate_user_mem(startAddress, cnt * PAGE_SIZE);
+			return (void *)startAddress;
+		}
+	}
+	//char* va = (char*)startAddress;
+	//char* potentialStart = (char*) startAddress;
+	//bool foundEnough = 0; // If this is 0 after the for loop return -1
+
+   return (void *)NULL;
 }
 
 //=================================
@@ -38,7 +77,27 @@ void free(void* virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - #14] [3] USER HEAP [USER SIDE] - free()
 	// Write your code here, remove the panic and write your code
-	panic("free() is not implemented yet...!!");
+	//panic("free() is not implemented yet...!!");
+	uint32 size = 0;
+	uint32 st_page =myEnv->hlimit + PAGE_SIZE;
+	if(virtual_address>=(void *)USER_HEAP_START && virtual_address < (void *)myEnv->brk){
+		free_block(virtual_address);
+	}else if(virtual_address>=(void *)st_page && virtual_address <(void *)USER_HEAP_MAX){
+		int done = 0;
+		for(int i=0;i<122879;i++){
+			if(mazen[i]==(uint32)virtual_address){
+				mazen[i]=0;
+				done = 1;
+				size+=PAGE_SIZE;
+			}else if(done==1){
+				break;
+			}
+		}
+	 sys_free_user_mem((uint32)virtual_address,size);
+
+	}else{
+	panic("invalid virtual address");
+	}
 }
 
 

@@ -143,23 +143,34 @@ void* sys_sbrk(int numOfPages)
 	/*====================================*/
 	struct Env* env = get_cpu_proc(); //the current running Environment to adjust its break limit
 
+
 	uint32 ret = env->brk;
+	if(numOfPages==0)
+		return (uint32*)ret;
+	//corner cases
+	if(ret + numOfPages * PAGE_SIZE > env->hlimit)
+				return (void*) -1;
+	if(ret + numOfPages * PAGE_SIZE < env->strt)
+				return (void*) -1;
 
 	// There's a -1 if there's no memory, I don't really know what "No memory means"
 	// I will just deal with the hard limit exceeded case and check later.
 	// After checking it says that if there's isn't enough memory...
 	// I guess this means that if there's 4 pages left and I need 5 then I should
 	// just return -1...
-
 	if(numOfPages > 0)
-	{
-		if(ret + numOfPages * PAGE_SIZE > env->hlimit)
-			return (void*) -1;
+		{
+			if(ret + numOfPages * PAGE_SIZE > env->hlimit)
+				return (void*) -1;
+			uint32 newBrk = ret + numOfPages * PAGE_SIZE - sizeof(int);
+			uint32* ptr = (uint32*)newBrk;
+			*ptr = 1;
+			newBrk += sizeof(int);
+			env->brk = newBrk;
+			//allocate_user_mem(env, ROUNDUP(ret,PAGE_SIZE), numOfPages * PAGE_SIZE);
+			// This leads to an additional page allocated
+		}
 
-		uint32 newBrk = ret + numOfPages * PAGE_SIZE;
-
-		env->brk = newBrk;
-	}
 
 	return (void*)ret;
 }
@@ -171,13 +182,28 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 {
 	/*====================================*/
 	/*Remove this line before start coding*/
-//	inctst();
-//	return;
 	/*====================================*/
 
 	//TODO: [PROJECT'24.MS2 - #13] [3] USER HEAP [KERNEL SIDE] - allocate_user_mem()
 	// Write your code here, remove the panic and write your code
-	panic("allocate_user_mem() is not implemented yet...!!");
+	//panic("allocate_user_mem() is not implemented yet...!!");
+
+	/* page size is 4KB = 2^12 */
+	//uint32 page_size = (1 << 12);
+
+	uint32 pages = size/PAGE_SIZE;
+	uint32 *ptr_page_table = NULL;
+	//cprintf("pages : %d\n",pages);
+	for(int i=0 ; i < pages ; i++)
+	{
+		//cprintf("i :%d\n",i);
+		if(get_page_table(e->env_page_directory, virtual_address, &ptr_page_table) == TABLE_NOT_EXIST)
+		{
+			ptr_page_table = create_page_table(e->env_page_directory, virtual_address);
+		}
+		ptr_page_table[PTX(virtual_address)] |= PERM_MARKED;
+		virtual_address += PAGE_SIZE;
+	}
 }
 
 //=====================================
@@ -185,18 +211,34 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 //=====================================
 void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 {
-	/*====================================*/
-	/*Remove this line before start coding*/
-//	inctst();
-//	return;
-	/*====================================*/
+    /*====================================*/
+    /*Remove this line before start coding*/
+//    inctst();
+//    return;
+    /*====================================*/
 
-	//TODO: [PROJECT'24.MS2 - #15] [3] USER HEAP [KERNEL SIDE] - free_user_mem
-	// Write your code here, remove the panic and write your code
-	panic("free_user_mem() is not implemented yet...!!");
+    //TODO: [PROJECT'24.MS2 - #15] [3] USER HEAP [KERNEL SIDE] - free_user_mem
+    // Write your code here, remove the panic and write your code
+    //panic("free_user_mem() is not implemented yet...!!");
 
 
-	//TODO: [PROJECT'24.MS2 - BONUS#3] [3] USER HEAP [KERNEL SIDE] - O(1) free_user_mem
+    //TODO: [PROJECT'24.MS2 - BONUS#3] [3] USER HEAP [KERNEL SIDE] - O(1) free_user_mem
+
+    uint32 pages = size/PAGE_SIZE;
+    uint32 *ptr_page_table = NULL;
+    struct WorkingSetElement *page_ws_element;
+
+    for(int i=0 ; i < pages ; i++)
+    {
+        /* remove the marked permission for every page entry */
+        pt_set_page_permissions(e->env_page_directory, virtual_address, 0, PERM_MARKED);
+        unmap_frame(e -> env_page_directory, virtual_address);
+        pf_remove_env_page(e, virtual_address);
+        env_page_ws_invalidate(e, virtual_address);
+        /* un-map the frame of the page and add it to the free frame list if the references is 0 */
+
+        virtual_address += PAGE_SIZE;
+    }
 }
 
 //=====================================

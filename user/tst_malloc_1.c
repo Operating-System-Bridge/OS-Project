@@ -77,7 +77,9 @@ void _main(void)
 			freeFrames = sys_calculate_free_frames() ;
 			lastIndexOfByte = (2*Mega-kilo)/sizeof(char) - 1;
 			byteArr = (char *) ptr_allocations[0];
+			cprintf("zz\n");
 			byteArr[0] = minByte ;
+			cprintf("mm\n");
 			byteArr[lastIndexOfByte] = maxByte ;
 			expectedNumOfFrames = 2 /*+1 table already created in malloc due to marking the allocated pages*/ ;
 			actualNumOfFrames = (freeFrames - sys_calculate_free_frames()) ;
