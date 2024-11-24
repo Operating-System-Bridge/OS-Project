@@ -193,10 +193,52 @@ void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 
 	//TODO: [PROJECT'24.MS2 - #15] [3] USER HEAP [KERNEL SIDE] - free_user_mem
 	// Write your code here, remove the panic and write your code
-	panic("free_user_mem() is not implemented yet...!!");
+	//panic("free_user_mem() is not implemented yet...!!");
 
 
 	//TODO: [PROJECT'24.MS2 - BONUS#3] [3] USER HEAP [KERNEL SIDE] - O(1) free_user_mem
+
+	uint32 pages = size/PAGE_SIZE;
+	uint32 *ptr_page_table = NULL;
+	struct WorkingSetElement *page_ws_element;
+
+	for(int i=0 ; i < pages ; i++)
+	{
+		/* remove the marked permission for every page entry */
+		get_page_table(e -> env_page_directory, virtual_address, &ptr_page_table);
+		ptr_page_table[PTX(virtual_address)] -= PERM_MARKED;
+
+
+		bool page_exist_in_ws = 0;
+		LIST_FOREACH(page_ws_element, &(e -> page_WS_list))
+		{
+		     if(virtual_address == (uint32)(page_ws_element -> virtual_address))
+		     {
+		    	 page_exist_in_ws = 1;
+		    	 break;
+		     }
+		}
+
+
+		if(!page_exist_in_ws)
+		{
+			/* Remove an existing environment page at the given virtual address from the page file. */
+			pf_remove_env_page(e, virtual_address);
+		}
+		else
+		{
+			/* Search for the given virtual address inside the working set and removes its entry.*/
+			env_page_ws_invalidate(e, virtual_address);
+		}
+
+        /* un-map the frame of the page and add it to the free frame list if the references is 0 */
+		unmap_frame(e -> env_page_directory, virtual_address);
+		struct FrameInfo *frame_info = get_frame_info(e -> env_page_directory, virtual_address, &ptr_page_table);
+		if(frame_info -> references == 0)
+		free_frame(frame_info);
+
+		virtual_address += PAGE_SIZE;
+	}
 }
 
 //=====================================
