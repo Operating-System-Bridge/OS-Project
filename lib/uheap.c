@@ -38,6 +38,8 @@ void* malloc(uint32 size)
 			return alloc_block_BF(size);
 
 	}
+	//	return (void *)NULL;
+
 
 	// Page Allocation
 

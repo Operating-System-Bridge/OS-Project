@@ -193,13 +193,14 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 
 	uint32 pages = size/PAGE_SIZE;
 	uint32 *ptr_page_table = NULL;
+	//cprintf("pages : %d\n",pages);
 	for(int i=0 ; i < pages ; i++)
 	{
-		if(get_page_table(ptr_page_directory, virtual_address, &ptr_page_table) == TABLE_NOT_EXIST)
+		//cprintf("i :%d\n",i);
+		if(get_page_table(e->env_page_directory, virtual_address, &ptr_page_table) == TABLE_NOT_EXIST)
 		{
-			ptr_page_table = create_page_table(ptr_page_directory, virtual_address);
+			ptr_page_table = create_page_table(e->env_page_directory, virtual_address);
 		}
-
 		ptr_page_table[PTX(virtual_address)] |= PERM_MARKED;
 		virtual_address += PAGE_SIZE;
 	}
