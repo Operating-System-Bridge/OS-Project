@@ -33,7 +33,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	kheap_st = daStart;
 	kheap_sbrk =  (daStart + initSizeToAllocate);
 	kheap_hlim =  daLimit;
-
+	startPageAllocator = kheap_hlim + PAGE_SIZE;
 	//2- All pages in the given range should be allocated and mapped
     for(uint32 it = kheap_st;it!=kheap_sbrk;it+=PAGE_SIZE ){
     	 struct FrameInfo *ptr_frame_info;
@@ -95,7 +95,6 @@ void* sbrk(int numOfPages)
 void* kmalloc(unsigned int size)
 {
 
-	// block allocation ?
 		if(size <= DYN_ALLOC_MAX_BLOCK_SIZE){
 			// use "isKHeapPlacementStrategyFIRSTFIT() ..." functions to check the current strategy
 			if(isKHeapPlacementStrategyFIRSTFIT())
@@ -107,40 +106,80 @@ void* kmalloc(unsigned int size)
 			else if(isKHeapPlacementStrategyWORSTFIT())
 			{return alloc_block_WF(size);}
 		}
-
-	//page allocation
 	uint32 numOfPages = ROUNDUP(size, PAGE_SIZE)/PAGE_SIZE;
-	//kpanic_into_prompt("size %d, numof pages %d",size,numOfPages);
-	uint32 l = kheap_hlim + PAGE_SIZE;
-	uint32 end = KERNEL_HEAP_MAX;
-	uint32 cur=0;// number of curr continuous free pages
-	uint32 *tempP ;//ptr_page_table
-	for(uint32 i =l;i<end;i+=PAGE_SIZE){	// curr va iterator
-		//struct FrameInfo * get_frame_info(uint32 *ptr_page_directory, uint32 virtual_address, uint32 **ptr_page_table)
-		struct FrameInfo *temp = get_frame_info(ptr_page_directory , i ,&tempP);
-		if(temp == NULL) {//page is free
+
+	uint32 cur=0;
+	uint32 *curFrame;
+	bool has_prev = 0;
+	struct FrameInfo *lst = NULL;
+	for(uint32 i = startPageAllocator; i<KERNEL_HEAP_MAX;)
+	{
+		struct FrameInfo *temp = get_frame_info(ptr_page_directory , i ,&curFrame);
+		if(temp == NULL)
 			cur++;
-		}else{//page is not free
-			l = i + PAGE_SIZE;
+		else
+		{
+			lst = temp;
+
+			if(temp->nxt != NULL)
+			{
+				if((temp->nxt->va - (i + (temp->after + 1) * PAGE_SIZE) + PAGE_SIZE - 1) / PAGE_SIZE < numOfPages)
+					i = temp->nxt->va;
+				else
+					i += (temp->after + 1) * PAGE_SIZE;
+			}
+			else
+				i += (temp->after + 1) * PAGE_SIZE;
 			cur = 0;
 			continue;
 		}
-		if(cur == numOfPages){//reach the required value
-			for(uint32 j =0,l2 = l;j<numOfPages;j++,l2+=PAGE_SIZE){
+		if(cur == numOfPages)
+		{
+			uint32 initial = i - (numOfPages - 1) * PAGE_SIZE;
+			uint32 before = 0, after = numOfPages - 1;
+			if(initial == startPageAllocator)
+				startPageAllocator += (after + 1) * PAGE_SIZE;
+
+			for(uint32 l2 = initial; l2 <= i; l2 += PAGE_SIZE)
+			{
 				struct FrameInfo *frame;
 				allocate_frame(&frame);
 				map_frame(ptr_page_directory,frame,l2,PERM_WRITEABLE);
 				frame->va=l2;
-                frame->before = j;
-                frame->after = numOfPages-1-j;
+                frame->before = before;
+                frame->after = after;
+                before++;
+                after--;
+                if(l2 == initial)
+                {
+                	if(lst != NULL)
+                	{
+                		frame->nxt = lst->nxt;
+                		lst->nxt = frame;
+                		frame->bef = lst;
+                		if(frame->nxt != NULL)
+                			frame->nxt->bef = frame;
+                	}
+                	else
+                	{
+                		if(HEAD != NULL && HEAD->va > frame->va)
+                		{
+                			frame->nxt = HEAD;
+                			HEAD = frame;
+                		}
+                	}
+                	if(HEAD == NULL)
+                	{
+                		HEAD = frame;
+                	}
+                }
 			}
-			return (uint32*)l;
+			return (uint32*)initial;
 
 		}
+		i += PAGE_SIZE;
 	}
-	//TODO: [PROJECT'24.MS2 - #03] [1] KERNEL HEAP - kmalloc
-	// Write your code here, remove the panic and write your code
-	//kpanic_into_prompt("kmalloc() is not implemented yet...!!");
+
 
    return NULL;
 
@@ -162,13 +201,35 @@ void kfree(void* virtual_address)
     	uint32 curr_va = get_frame_info(ptr_page_directory , (uint32)virtual_address ,&tempp)->va;
     	uint32 before = get_frame_info(ptr_page_directory , (uint32)virtual_address ,&tempp)->before;
     	uint32 after = get_frame_info(ptr_page_directory , (uint32)virtual_address ,&tempp)->after;
+    	if(get_frame_info(ptr_page_directory , (uint32)virtual_address - before * PAGE_SIZE ,&tempp) == HEAD)
+    	{
+    		if(get_frame_info(ptr_page_directory , (uint32)virtual_address - before * PAGE_SIZE ,&tempp)->nxt != NULL)
+    			HEAD = get_frame_info(ptr_page_directory , (uint32)virtual_address - before * PAGE_SIZE ,&tempp)->nxt;
+    		else
+    			HEAD = NULL;
+    	}
+    	if(get_frame_info(ptr_page_directory , (uint32)virtual_address - before * PAGE_SIZE ,&tempp)->va < startPageAllocator)
+    		startPageAllocator = get_frame_info(ptr_page_directory , (uint32)virtual_address - before * PAGE_SIZE ,&tempp)->va;
+    	if(get_frame_info(ptr_page_directory , (uint32)virtual_address - before * PAGE_SIZE ,&tempp)->bef != NULL)
+    	{
+
+    		get_frame_info(ptr_page_directory , (uint32)virtual_address - before * PAGE_SIZE ,&tempp)->bef->nxt =
+    				get_frame_info(ptr_page_directory , (uint32)virtual_address - before * PAGE_SIZE ,&tempp)->nxt;
+    		if(get_frame_info(ptr_page_directory , (uint32)virtual_address - before * PAGE_SIZE ,&tempp)->bef->nxt != NULL)
+    			get_frame_info(ptr_page_directory , (uint32)virtual_address - before * PAGE_SIZE ,&tempp)->bef->nxt->bef =
+    					get_frame_info(ptr_page_directory , (uint32)virtual_address - before * PAGE_SIZE ,&tempp)->bef;
+
+    	}
+
     	//kpanic_into_prompt("frame ref ,%d",frame->references);
     	//unmap_frame(ptr_page_directory,curr_va);
     	for(uint32 i=0,it=curr_va-PAGE_SIZE;i<before;i++,it-=PAGE_SIZE){
+
     		unmap_frame(ptr_page_directory,it);
     		//cprintf("before\n");
     	}
     	for(uint32 i=0; i<= after;i++,curr_va+=PAGE_SIZE){
+
     	    		unmap_frame(ptr_page_directory,curr_va);
     	    	//	cprintf("after\n");
     	 }

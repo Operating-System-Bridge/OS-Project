@@ -39,11 +39,11 @@ unsigned int kheap_virtual_address(unsigned int physical_address);
 unsigned int kheap_physical_address(unsigned int virtual_address);
 
 int numOfKheapVACalls ;
-
+struct FrameInfo * HEAD;
 
 //TODO: [PROJECT'24.MS2 - #01] [1] KERNEL HEAP - add suitable code here
 uint32 kheap_st;//start
 uint32 kheap_sbrk;//segment break
 uint32 kheap_hlim;//hard limit
-
+uint32 startPageAllocator;
 #endif // FOS_KERN_KHEAP_H_

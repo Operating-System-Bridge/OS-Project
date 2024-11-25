@@ -745,7 +745,6 @@ int test_fastfirstfit()
 	// Make memory holes.
 	freeDiskFrames = pf_calculate_free_frames() ;
 	freeFrames = sys_calculate_free_frames() ;
-
 	if (numOf2MAllocs < 30)
 		panic("unexpcected number of allocations! PLEASE REVISE THE STAFF");
 	kfree(ptr_fast_allocations[0]);		// Hole 1 = allocSize
