@@ -106,7 +106,6 @@ void* kmalloc(unsigned int size)
 			else if(isKHeapPlacementStrategyWORSTFIT())
 			{return alloc_block_WF(size);}
 		}
-
 	uint32 numOfPages = ROUNDUP(size, PAGE_SIZE)/PAGE_SIZE;
 
 	uint32 cur=0;

@@ -112,7 +112,35 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 	//==============================================================
 	//TODO: [PROJECT'24.MS2 - #18] [4] SHARED MEMORY [USER SIDE] - smalloc()
 	// Write your code here, remove the panic and write your code
-	panic("smalloc() is not implemented yet...!!");
+	//panic("smalloc() is not implemented yet...!!");
+
+	uint32 cnt = 0, req = (size + PAGE_SIZE - 1) / PAGE_SIZE, va = myEnv->hlimit + PAGE_SIZE;
+	for(uint32 i = myEnv->hlimit + PAGE_SIZE, j = 0; i < USER_HEAP_MAX; i += PAGE_SIZE, j++)
+	{
+
+		if(mazen[j] != 0)
+		{
+			va = i + PAGE_SIZE;
+			cnt = 0;
+			continue;
+		}
+		else
+			cnt++;
+
+		if(cnt == req)
+		{
+
+			int ret = sys_createSharedObject(sharedVarName, size, isWritable, (void *) va);
+
+			if(ret == E_NO_SHARE || ret == E_SHARED_MEM_EXISTS)
+				return NULL;
+			sys_allocate_user_mem(va, req * PAGE_SIZE);
+			for(uint32 k = 0; k < req; k++)
+				mazen[j - k] = va;
+			return (void *)va;
+
+		}
+	}
 	return NULL;
 }
 
@@ -124,8 +152,34 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 //	//TODO: [PROJECT'24.MS2 - #20] [4] SHARED MEMORY [USER SIDE] - sget()
 //	// Write your code here, remove the panic and write your code
 //	panic("sget() is not implemented yet...!!");
+	int curSize = sys_getSizeOfSharedObject(ownerEnvID, sharedVarName);
+	if(curSize == E_SHARED_MEM_NOT_EXISTS)
+		return NULL;
+	uint32 cnt = 0, va = myEnv->hlimit + PAGE_SIZE, req = (curSize + PAGE_SIZE - 1) / PAGE_SIZE;
+	for(uint32 i = myEnv->hlimit + PAGE_SIZE, j = 0; i < USER_HEAP_MAX; i += PAGE_SIZE, j++)
+	{
+		if(mazen[j] != 0)
+		{
+			va = i + PAGE_SIZE;
+			cnt = 0;
+			continue;
+		}
+		else
+			cnt++;
+		if(cnt == req)
+		{
+			int ret = sys_getSharedObject(ownerEnvID, sharedVarName, (void *) va);
+			if(ret == E_SHARED_MEM_NOT_EXISTS)
+				return NULL;
+			sys_allocate_user_mem(va, req * PAGE_SIZE);
+			for(uint32 k = 0; k < req; k++)
+				mazen[j - k] = va;
+			return (void *)va;
 
+		}
+	}
 	return NULL;
+
 }
 
 
