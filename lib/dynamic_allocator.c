@@ -190,6 +190,7 @@ void *alloc_block_FF(uint32 size)
 			uint32 required_size = size + 2*sizeof(int) /*header & footer*/ + 2*sizeof(int) /*da begin & end*/ ;
 			uint32 da_start = (uint32)sbrk(ROUNDUP(required_size, PAGE_SIZE)/PAGE_SIZE);
 			uint32 da_break = (uint32)sbrk(0);
+		//	cprintf("%d start \n %d brk \n diff %d \n",da_start,da_break,da_break - da_start);
 			initialize_dynamic_allocator(da_start, da_break - da_start);
 		}
 	}
@@ -200,7 +201,7 @@ void *alloc_block_FF(uint32 size)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
     //panic("alloc_block_FF is not implemented yet");
 	//Your Code is Here...
-
+     //cprintf("alloc size %d",size);
 	//! Adding the size of the header and footer
 	uint32 reqSize = size + 2 * sizeof(int);
 
@@ -306,8 +307,30 @@ void *alloc_block_BF(uint32 size)
 
 	if(difference == -1)
 	{
-		sbrk(0);
-		return NULL;
+		uint32 numOfPages = (size + PAGE_SIZE - 1) / PAGE_SIZE;
+		void *ret = sbrk(numOfPages);
+		uint32 extraSize = numOfPages * PAGE_SIZE;
+
+		if(ret == (void* )-1)
+			return NULL;
+		struct BlockElement *prv = NULL;
+		if(LIST_SIZE(&freeBlocksList) > 0)
+			prv = LIST_LAST(&freeBlocksList);
+		struct BlockElement *cur = (struct BlockElement *)( ret);
+		LIST_INSERT_TAIL(&freeBlocksList, cur);
+		set_block_data(cur, extraSize, 0);
+
+		bool hasPrv = (prv != NULL);
+		if(prv != NULL)
+			hasPrv &= ((struct BlockElement *)((char *)cur - get_block_size(prv)) == prv);
+
+		if(hasPrv)
+		{
+			LIST_REMOVE(&freeBlocksList, cur);
+			uint32 size = get_block_size(prv);
+			set_block_data(prv, size + extraSize, 0);
+		}
+
 	}
 
 	bool x = (targetSize - reqSize < 4 * sizeof(int));

@@ -51,6 +51,32 @@ uint8 isBufferingEnabled(){  return _EnableBuffering ; }
 void setModifiedBufferLength(uint32 length) { _ModifiedBufferLength = length;}
 uint32 getModifiedBufferLength() { return _ModifiedBufferLength;}
 
+
+
+//==================================
+//   HELPER FUNCTIONS
+//==================================
+uint8 in_heap(uint32 va){
+	return va < USER_HEAP_MAX && va >= USER_HEAP_START;
+}
+uint8 in_stack(uint32 va){
+	return va < USTACKTOP && va >= USTACKBOTTOM;
+}
+
+void add_wse(struct Env* faulted_env, uint32 fault_va){
+	struct WorkingSetElement* wse = env_page_ws_list_create_element(faulted_env, fault_va);
+	LIST_INSERT_TAIL(&faulted_env->page_WS_list, wse);
+	if ((faulted_env->page_WS_list.size) == (faulted_env->page_WS_max_size))
+		faulted_env->page_last_WS_element = faulted_env->page_WS_list.lh_first;
+	else
+		faulted_env->page_last_WS_element = NULL;
+	}
+
+
+//==================================
+
+
+
 //===============================
 // FAULT HANDLERS
 //===============================
@@ -151,7 +177,19 @@ void fault_handler(struct Trapframe *tf)
 			//TODO: [PROJECT'24.MS2 - #08] [2] FAULT HANDLER I - Check for invalid pointers
 			//(e.g. pointing to unmarked user heap page, kernel or wrong access rights),
 			//your code is here
+			uint32 perms = pt_get_page_permissions(faulted_env->env_page_directory, fault_va);
 
+			if(in_heap(fault_va)){
+				if(!(perms & PERM_MARKED)){
+					env_exit();
+				}
+			}
+			else if(!in_stack(fault_va)){
+				env_exit();
+			}
+			if(!(perms & PERM_WRITEABLE) && (perms &PERM_PRESENT)){
+				env_exit();
+			}
 			/*============================================================================================*/
 		}
 
@@ -227,8 +265,16 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		//cprintf("PLACEMENT=========================WS Size = %d\n", wsSize );
 		//TODO: [PROJECT'24.MS2 - #09] [2] FAULT HANDLER I - Placement
 		// Write your code here, remove the panic and write your code
-		panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
-
+		//panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
+		struct FrameInfo* frame_info;
+		allocate_frame(&frame_info);
+		map_frame(faulted_env->env_page_directory, frame_info, fault_va, PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
+		int ret = pf_read_env_page(faulted_env, (void*)fault_va);
+		if(ret != 0){
+			if(!in_stack(fault_va)&&!in_heap(fault_va))
+				env_exit();
+		}
+		add_wse(faulted_env, fault_va);
 		//refer to the project presentation and documentation for details
 	}
 	else
@@ -247,4 +293,3 @@ void __page_fault_handler_with_buffering(struct Env * curenv, uint32 fault_va)
 	// your code is here, remove the panic and write your code
 	panic("__page_fault_handler_with_buffering() is not implemented yet...!!");
 }
-
