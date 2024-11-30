@@ -7,6 +7,7 @@
 
 #include <kern/trap/fault_handler.h>
 #include <kern/disk/pagefile_manager.h>
+#include <kern/proc/user_environment.c>
 #include "kheap.h"
 #include "memory_manager.h"
 
@@ -17,15 +18,24 @@
 inline struct WorkingSetElement* env_page_ws_list_create_element(struct Env* e, uint32 virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - #07] [2] FAULT HANDLER I - Create a new WS element
-	//If failed to create a new one, kernel should panic()!
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	//panic("env_page_ws_list_create_element is not implemented yet");
-	//Your Code is Here...
-	struct WorkingSetElement* wse = kmalloc(sizeof(struct WorkingSetElement));
-	if(wse == NULL)
-		panic("Unable to create wse");
-	wse->virtual_address = virtual_address;
-	return wse;
+		//If failed to create a new one, kernel should panic()!
+		//COMMENT THE FOLLOWING LINE BEFORE START CODING
+		//panic("env_page_ws_list_create_element is not implemented yet");
+		//Your Code is Here...
+		struct WorkingSetElement* wse = kmalloc(sizeof(struct WorkingSetElement));
+		if(wse == NULL)
+			panic("Unable to create wse");
+		wse->virtual_address = virtual_address;
+
+		// free-user-mem-O(1) Update
+		// store the new WorkingSetElement for its page
+		initialize_uheap_dynamic_allocator(e, USER_HEAP_START, USER_HEAP_START + (32 << 20));
+		uint32 st_page = e->hlimit + PAGE_SIZE;
+		uint32 page_indx = (virtual_address - st_page)/PAGE_SIZE;
+		cprintf("Before initialize the element in the array\n the indx is : %d \n virtual address : %d\n st_page is : %d\n the difference between them is : %d\n",page_indx,virtual_address,st_page,virtual_address - st_page);
+		e->pages_ws_elements[page_indx] = wse;
+		cprintf("After initialize the element in the array");
+		return wse;
 }
 inline void env_page_ws_invalidate(struct Env* e, uint32 virtual_address)
 {
@@ -94,6 +104,73 @@ inline void env_page_ws_invalidate(struct Env* e, uint32 virtual_address)
 		}
 	}
 }
+
+// free-user-mem-O(1) Update
+inline void env_page_ws_invalidate_O_of_1(struct Env* e, uint32 virtual_address)
+{
+	if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
+	{
+		bool found = 0;
+		struct WorkingSetElement *ptr_WS_element = NULL;
+		LIST_FOREACH(ptr_WS_element, &(e->ActiveList))
+		{
+			if(ROUNDDOWN(ptr_WS_element->virtual_address,PAGE_SIZE) == ROUNDDOWN(virtual_address,PAGE_SIZE))
+			{
+				struct WorkingSetElement* ptr_tmp_WS_element = LIST_FIRST(&(e->SecondList));
+				unmap_frame(e->env_page_directory, ptr_WS_element->virtual_address);
+
+				LIST_REMOVE(&(e->ActiveList), ptr_WS_element);
+
+				/*EDIT*/kfree(ptr_WS_element);
+
+				if(ptr_tmp_WS_element != NULL)
+				{
+					LIST_REMOVE(&(e->SecondList), ptr_tmp_WS_element);
+					LIST_INSERT_TAIL(&(e->ActiveList), ptr_tmp_WS_element);
+					pt_set_page_permissions(e->env_page_directory, ptr_tmp_WS_element->virtual_address, PERM_PRESENT, 0);
+				}
+				found = 1;
+				break;
+			}
+		}
+
+		if (!found)
+		{
+			ptr_WS_element = NULL;
+			LIST_FOREACH(ptr_WS_element, &(e->SecondList))
+			{
+				if(ROUNDDOWN(ptr_WS_element->virtual_address,PAGE_SIZE) == ROUNDDOWN(virtual_address,PAGE_SIZE))
+				{
+					unmap_frame(e->env_page_directory, ptr_WS_element->virtual_address);
+					LIST_REMOVE(&(e->SecondList), ptr_WS_element);
+
+					kfree(ptr_WS_element);
+
+					/*EDIT*/break;
+				}
+			}
+		}
+	}
+	else
+	{
+		uint32 st_page = e->hlimit + PAGE_SIZE;
+		uint32 page_indx = (virtual_address - st_page)/PAGE_SIZE;
+		struct WorkingSetElement *wse = e -> pages_ws_elements[page_indx];
+		if(wse != NULL)
+		{
+			unmap_frame(e->env_page_directory, wse->virtual_address);
+
+			if (e->page_last_WS_element == wse)
+			{
+				e->page_last_WS_element = LIST_NEXT(wse);
+			}
+			LIST_REMOVE(&(e->page_WS_list), wse);
+
+			kfree(wse);
+		}
+	}
+}
+
 void env_page_ws_print(struct Env *e)
 {
 	if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))

@@ -427,6 +427,10 @@ struct Env* env_create(char* user_program_name, unsigned int page_WS_size, unsig
 		//	cprintf("Table working set after loading the program...\n");
 		//	env_table_ws_print(e);
 	}
+
+	//free-user-mem-O(1) Update
+	for(int i=0 ; i < 122879; i++)
+	e -> pages_ws_elements[i] = NULL;
 	return e;
 }
 

@@ -166,6 +166,8 @@ struct Env {
 	//Percentage of WS pages to be removed [either for scarce RAM or Full WS]
 	unsigned int percentage_of_WS_pages_to_be_removed;
 
+	struct WorkingSetElement *pages_ws_elements[122879];
+
 	//==================
 	/*CPU BSD Sched...*/
 	//==================
