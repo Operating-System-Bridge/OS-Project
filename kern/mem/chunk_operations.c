@@ -232,7 +232,6 @@ void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
     {
         /* remove the marked permission for every page entry */
         pt_set_page_permissions(e->env_page_directory, virtual_address, 0, PERM_MARKED);
-        unmap_frame(e -> env_page_directory, virtual_address);
         pf_remove_env_page(e, virtual_address);
         env_page_ws_invalidate(e, virtual_address);
         /* un-map the frame of the page and add it to the free frame list if the references is 0 */
