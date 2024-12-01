@@ -136,7 +136,7 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 				return NULL;
 			sys_allocate_user_mem(va, req * PAGE_SIZE);
 			for(uint32 k = 0; k < req; k++)
-				mazen[j - k] = va;
+				mazen[j - k] = ret;
 			return (void *)va;
 
 		}
@@ -173,7 +173,7 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 				return NULL;
 			sys_allocate_user_mem(va, req * PAGE_SIZE);
 			for(uint32 k = 0; k < req; k++)
-				mazen[j - k] = va;
+				mazen[j - k] = ret;
 			return (void *)va;
 
 		}
@@ -202,7 +202,22 @@ void sfree(void* virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [USER SIDE] - sfree()
 	// Write your code here, remove the panic and write your code
-	panic("sfree() is not implemented yet...!!");
+  	//panic("sfree() is not implemented yet...!!");
+	/*
+	 *  1 - Find the ID of the shared variable at the given address
+     *  2 - Call sys_freeSharedObject() to free it
+	 */
+	uint32 va = myEnv->hlimit + PAGE_SIZE;
+	int32 sharedObjectID =0;
+	for(uint32 i = myEnv->hlimit + PAGE_SIZE, j = 0; i < USER_HEAP_MAX; i += PAGE_SIZE, j++){
+		if(i == (uint32)(virtual_address)){
+			sharedObjectID = mazen[j];
+			break;
+		}
+	}
+	    if(sharedObjectID)
+	    sys_freeSharedObject(sharedObjectID, virtual_address);
+
 }
 
 

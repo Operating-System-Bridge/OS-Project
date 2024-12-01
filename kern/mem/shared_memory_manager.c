@@ -130,6 +130,7 @@ struct Share* create_share(int32 ownerID, char* shareName, uint32 size, uint8 is
 
         return newShare;
 }
+
 //=============================
 // [3] Search for Share Object:
 //=============================
@@ -207,6 +208,7 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 //======================
 int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 {
+
 //	//TODO: [PROJECT'24.MS2 - #21] [4] SHARED MEMORY [KERNEL SIDE] - getSharedObject()
 //	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 //	panic("getSharedObject is not implemented yet");
@@ -245,18 +247,88 @@ void free_share(struct Share* ptrShare)
 {
 	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [KERNEL SIDE] - free_share()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("free_share is not implemented yet");
+	//panic("free_share is not implemented yet");
 	//Your Code is Here...
-
+	    // Free frames storage
+      kfree(ptrShare->framesStorage);
+	  LIST_REMOVE( &AllShares.shares_list,ptrShare);
+	  kfree(ptrShare);
 }
 //========================
 // [B2] Free Share Object:
 //========================
+
 int freeSharedObject(int32 sharedObjectID, void *startVA)
 {
 	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [KERNEL SIDE] - freeSharedObject()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("freeSharedObject is not implemented yet");
+	//panic("freeSharedObject is not implemented yet");
 	//Your Code is Here...
+	cprintf("goal : %d\n",sharedObjectID);
+	struct Share *share = NULL;
+	acquire_spinlock(&AllShares.shareslock);
 
+	    // Find the shared object by ID
+	    LIST_FOREACH(share, &AllShares.shares_list)
+	    {
+	    	cprintf("search :%d and : %d\n",share->ID,share->ID&sharedObjectID);
+	        if (share->ID == sharedObjectID)
+	            break;
+	    }
+
+	    // If not found, return error
+	    if (!share)
+	    {
+	        release_spinlock(&AllShares.shareslock);
+	        return E_SHARED_MEM_NOT_EXISTS;
+	    }
+	    struct Env* myenv = get_cpu_proc();
+	    // Unmap all frames in the range
+	    for (uint32 va = (uint32)startVA, i = 0; i < ROUNDUP(share->size, PAGE_SIZE) / PAGE_SIZE; va += PAGE_SIZE, i++)
+	    {
+	        unmap_frame(myenv->env_page_directory, va);
+
+	        // If a page table becomes empty, remove it
+	        uint32 *pt = NULL;
+	        get_page_table(myenv->env_page_directory, va, &pt);
+	            myenv->env_page_directory[PDX(va)] = 0;
+	            tlbflush();
+
+	    }
+
+	    // Decrement references or free the share if no references remain
+	    share->references--;
+	    if (share->references == 0)
+	    {
+	        free_share(share);
+	    }
+
+	    release_spinlock(&AllShares.shareslock);
+	    return 0; // Success
+}
+int getSharedObjectID(void * virtual_address)
+{
+    struct Share *share;
+
+    // Acquire lock to protect shared list
+    acquire_spinlock(&AllShares.shareslock);
+     uint32 va = (uint32)virtual_address;
+    // Traverse the shares list to find a match for the virtual address
+    LIST_FOREACH(share, &AllShares.shares_list)
+    {
+        uint32 numOfFrames = ROUNDUP(share->size, PAGE_SIZE) / PAGE_SIZE;
+        uint32 startVA = (uint32)share->framesStorage[0]->va; // Starting virtual address of the shared object
+
+        // Check if the given virtual address falls within the range of the share
+        if (va >= startVA && va < startVA + (numOfFrames * PAGE_SIZE))
+        {
+            release_spinlock(&AllShares.shareslock);
+            return share->ID; // Return the ID of the found share
+        }
+    }
+
+    release_spinlock(&AllShares.shareslock);
+
+    // If no match is found, return error code
+    return E_SHARED_MEM_NOT_EXISTS;
 }
