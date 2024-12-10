@@ -360,7 +360,65 @@ void sys_set_uheap_strategy(uint32 heapStrategy)
 /*******************************/
 //[PROJECT'24.MS3] ADD SUITABLE CODE HERE
 
+void sys_wait_semaphore(struct semaphore *sem)
+{
 
+		acquire_spinlock(&(ProcessQueues.qlock));
+		while(xchg(&(sem->semdata->lock), 1) != 0);
+
+	    // decrement the counter
+	    sem->semdata->count--;
+
+	    if(sem->semdata->count < 0){
+
+	        // put the process on blocked queue
+	        struct Env *env= get_cpu_proc();
+
+	        enqueue(&(sem->semdata->queue),env);
+	        sem->semdata->lock = 0;
+	    }
+	    sem->semdata->lock = 0;
+	    release_spinlock(&(ProcessQueues.qlock));
+}
+
+
+void sys_signal_semaphore(struct semaphore *sem)
+{
+	cprintf("Signaling %d\n", sem->semdata->count);
+	//TODO: [PROJECT'24.MS3 - #05] [2] USER-LEVEL SEMAPHORE - signal_semaphore
+	    //COMMENT THE FOLLOWING LINE BEFORE START CODING
+	    //panic("signal_semaphore is not implemented yet");
+	    //Your Code is Here...
+		acquire_spinlock(&(ProcessQueues.qlock));
+		while(xchg(&(sem->semdata->lock), 1) != 0);
+		// increment the counter
+
+		sem->semdata->count++;
+		if(sem->semdata->count <= 0){
+			// remove a process from the queue
+			struct Env *env = dequeue(&(sem->semdata->queue));
+			// put it on ready queue
+			sched_insert_ready(env);
+		}
+		sem->semdata->lock = 0;
+		release_spinlock(&(ProcessQueues.qlock));
+}
+
+struct Env* sys_dequeue(struct Env_Queue* e)
+{
+	return (struct Env*)0;
+}
+void sys_enqueue(struct Env_Queue* e, struct Env* z){
+	return;
+}
+struct Env*	sys_get_cpu_proc()
+{
+	return (struct Env*)0;
+}
+void sys_init_queue(struct Env_Queue* e)
+{
+	return;
+}
 /*******************************/
 /* SHARED MEMORY SYSTEM CALLS */
 /*******************************/
@@ -690,6 +748,23 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 	case SYS_utilities:
 		sys_utilities((char*)a1, (int)a2);
 		return 0;
+	case SYS_wait_semaphore:
+		sys_wait_semaphore((struct semaphore*)a1);
+		return 0;
+	case SYS_signal_semaphore:
+		sys_signal_semaphore((struct semaphore*)a1);
+		return 0;
+	case SYS_dequeue:
+		return (uint32)sys_dequeue((struct Env_Queue*)a1);
+	case SYS_enqueue:
+		sys_enqueue((struct Env_Queue*)a1, (struct Env*)a2);
+		return 0;
+	case SYS_get_cpu_proc:
+		return (uint32)sys_get_cpu_proc();
+	case SYS_init_queue:
+		sys_init_queue((struct Env_Queue *)a1);
+		return 0;
+
 
 	case NSYSCALLS:
 		return 	-E_INVAL;
