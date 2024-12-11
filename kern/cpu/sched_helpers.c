@@ -709,7 +709,24 @@ void env_set_priority(int envID, int priority)
 
 	//Your code is here
 	//Comment the following line
-	panic("Not implemented yet");
+	//panic("Not implemented yet");
+
+	if(proc != 0)
+	{
+		proc -> priority = priority;
+		if(proc -> env_status == ENV_READY)
+		{
+			sched_remove_ready(proc);
+			sched_insert_ready(proc);
+		}
+	}
+	else
+	{
+		/* should I panic if env = NULL or Not */
+		panic("the environment is NULL");
+	}
+
+
 }
 
 void sched_set_starv_thresh(uint32 starvThresh)
@@ -719,5 +736,6 @@ void sched_set_starv_thresh(uint32 starvThresh)
 	//Comment the following line
 	//panic("Not implemented yet");
 
-
+    starv_thresh = starvThresh;
+    //cprintf("%u",starv_thresh);
 }
