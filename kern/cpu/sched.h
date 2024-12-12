@@ -61,6 +61,7 @@ struct
 #define PRI_MAX 63
 int64 ticks;
 uint32 starv_thresh;
+struct spinlock starv_qlock;
 int64 timer_ticks() ;
 /********* for BSD Priority Scheduler *************/
 

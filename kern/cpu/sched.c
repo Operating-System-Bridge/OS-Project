@@ -256,21 +256,25 @@ void sched_init_PRIRR(uint8 numOfPriorities, uint8 quantum, uint32 starvThresh)
 Do other initializations (if any)
 Should use the following global variables for initialization (declared in kern/cpu/sched.h)
  *
- */
+ */init_spinlock(&starv_qlock,"7mada");
+
    sched_delete_ready_queues();
-   acquire_spinlock(&ProcessQueues.qlock);
    ProcessQueues.env_ready_queues = kmalloc(numOfPriorities * sizeof(struct Env_Queue));
    quantums = kmalloc(numOfPriorities * sizeof(uint8));
-   scheduler_method = SCH_PRIRR;
+
    kclock_set_quantum(quantum);
    num_of_ready_queues = numOfPriorities;
+
+   sched_set_starv_thresh(starvThresh);
+
    //acquire_spinlock(&ProcessQueues.qlock);
+   acquire_spinlock(&ProcessQueues.qlock);
 	for (int i = 0; i < numOfPriorities; i++) {
 	      init_queue(&ProcessQueues.env_ready_queues[i]);
 	      quantums[i] = quantum;
 	 }
 
-	 release_spinlock(&ProcessQueues.qlock);
+	release_spinlock(&ProcessQueues.qlock);
 	//=========================================
 	//DON'T CHANGE THESE LINES=================
 	uint16 cnt0 = kclock_read_cnt0_latch() ; //read after write to ensure it's set to the desired value
@@ -401,6 +405,8 @@ struct Env* fos_scheduler_PRIRR()
 		  kclock_set_quantum(quantums[0]);
 		return NULL;
 	}
+	//if(next_env->prog_name == "fib")
+	//cprintf("next - >  %c \n",next_env->prog_name);
 	next_env = dequeue(&(ProcessQueues.env_ready_queues[pr]));
 	kclock_set_quantum(quantums[pr]);
 	return next_env;
@@ -414,6 +420,7 @@ void clock_interrupt_handler(struct Trapframe* tf)
 {
 	if (isSchedMethodPRIRR())
 	{
+		//cprintf("starv_thresh = %d ,ticks = %d \n" ,starv_thresh,ticks);
 		//TODO: [PROJECT'24.MS3 - #09] [3] PRIORITY RR Scheduler - clock_interrupt_handler
 		//Your code is here
 		//Comment the following line
@@ -430,7 +437,8 @@ IF #TICKS IT EXCEEDS THE STARVATION THRESHOLD
 		   //  enqueue(&(ProcessQueues.env_ready_queues[i-1]), dequeue(&(ProcessQueues.env_ready_queues[i])));
 				struct Env * ptr_env=NULL;
 				LIST_FOREACH(ptr_env, &(ProcessQueues.env_ready_queues[i])){
-		         if(ticks - ptr_env->prrrticks > starv_thresh){
+		         if(ticks - ptr_env->prrrticks >= starv_thresh){
+		      //  	 cprintf("global ticks : %d  promote - > %d env id : %d \n",ticks,ptr_env->prrrticks,ptr_env->env_id);
 		        	 ptr_env->prrrticks = ticks;
 					 env_set_priority(ptr_env->env_id,i-1);
 		         }

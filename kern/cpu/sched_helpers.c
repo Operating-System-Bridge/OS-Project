@@ -149,6 +149,7 @@ void sched_insert_ready(struct Env* env)
 	/*To protect process Qs (or info of current process) in multi-CPU*/
 	if(!holding_spinlock(&ProcessQueues.qlock))
 		panic("sched: q.lock is not held by this CPU while it's expected to be.");
+
 	/*********************************************************************/
 
 	assert(env != NULL);
@@ -712,22 +713,17 @@ void env_set_priority(int envID, int priority)
 	//Comment the following line
 	//panic("Not implemented yet");
 
-	if(proc != 0)
+	if(proc != NULL)
 	{
 		proc -> priority = priority;
 		if(proc -> env_status == ENV_READY)
 		{
+			acquire_spinlock(&ProcessQueues.qlock);
 			sched_remove_ready(proc);
 			sched_insert_ready(proc);
+			release_spinlock(&ProcessQueues.qlock);
 		}
 	}
-	else
-	{
-		/* should I panic if env = NULL or Not */
-		panic("the environment is NULL");
-	}
-
-
 }
 
 void sched_set_starv_thresh(uint32 starvThresh)
@@ -736,7 +732,8 @@ void sched_set_starv_thresh(uint32 starvThresh)
 	//Your code is here
 	//Comment the following line
 	//panic("Not implemented yet");
-
+	acquire_spinlock(&starv_qlock);
     starv_thresh = starvThresh;
+    release_spinlock(&starv_qlock);
     //cprintf("%u",starv_thresh);
 }
