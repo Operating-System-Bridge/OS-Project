@@ -505,7 +505,6 @@ int command_kill_program(int number_of_arguments, char **arguments)
 int commnad_load_env(int number_of_arguments, char **arguments)
 {
 	struct Env *env = CreateEnv(number_of_arguments, arguments);
-	cprintf("env id  = %d \n",env->env_id);
 	if (env == NULL)
 		return 0 ;
 
