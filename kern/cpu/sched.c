@@ -249,15 +249,20 @@ void sched_init_PRIRR(uint8 numOfPriorities, uint8 quantum, uint32 starvThresh)
 	//TODO: [PROJECT'24.MS3 - #07] [3] PRIORITY RR Scheduler - sched_init_PRIRR
 	//Your code is here
 	//Comment the following line
-	panic("Not implemented yet");
+	//panic("Not implemented yet");
 
 
-
-
-
-
-
-
+   sched_delete_ready_queues();
+   ProcessQueues.env_ready_queues = kmalloc(numOfPriorities * sizeof(struct Env_Queue));
+   quantums = kmalloc(numOfPriorities * sizeof(uint8));
+   scheduler_method = SCH_PRIRR;
+   kclock_set_quantum(quantum);
+   num_of_ready_queues = numOfPriorities;
+   //acquire_spinlock(&ProcessQueues.qlock);
+	for (int i = 0; i < numOfPriorities; i++) {
+	      init_queue(&ProcessQueues.env_ready_queues[i]);
+	      quantums[i] = quantum;
+	 }
 
 	//=========================================
 	//DON'T CHANGE THESE LINES=================
