@@ -59,20 +59,58 @@ uint32 getModifiedBufferLength() { return _ModifiedBufferLength;}
 uint8 in_heap(uint32 va){
 	return va < USER_HEAP_MAX && va >= USER_HEAP_START;
 }
+uint8 in_kernel(uint32 va){
+	return va >= KERNEL_BASE && va <KERNEL_HEAP_MAX;
+}
 uint8 in_stack(uint32 va){
-	return va < USTACKTOP && va >= USTACKBOTTOM;
+	return va >= USTACKBOTTOM && va <USTACKTOP;
 }
 
-void add_wse(struct Env* faulted_env, uint32 fault_va){
-	struct WorkingSetElement* wse = env_page_ws_list_create_element(faulted_env, fault_va);
+void add_wse(struct Env* faulted_env, uint32 fault_va, struct WorkingSetElement* wse){
+	if(wse == NULL)
+		wse = env_page_ws_list_create_element(faulted_env, fault_va);
 	LIST_INSERT_TAIL(&faulted_env->page_WS_list, wse);
 	if ((faulted_env->page_WS_list.size) == (faulted_env->page_WS_max_size))
 		faulted_env->page_last_WS_element = faulted_env->page_WS_list.lh_first;
 	else
 		faulted_env->page_last_WS_element = NULL;
+	wse->sweeps_counter = 0;
+}
+void add(struct Env* env, uint32 va, struct FrameInfo* frame_info){
+	if(frame_info == NULL){
+		allocate_frame(&frame_info);
 	}
+	map_frame(env->env_page_directory, frame_info, va, PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
+	int ret = pf_read_env_page(env, (void*)va);
+	if(ret != 0){
+		if(!in_stack(va)&&!in_heap(va)){
+			cprintf("Died at %x \n", va);
+			env_exit();
+		}
+	}
+}
+struct FrameInfo* save(struct WorkingSetElement* wse, struct Env* env){
+	struct FrameInfo* frame_info;
+	uint32* ptr_page_table;
+	frame_info = get_frame_info(env->env_page_directory, wse->virtual_address, &ptr_page_table);
+	uint32 perms = pt_get_page_permissions(env->env_page_directory, wse->virtual_address);
+	if(perms & PERM_MODIFIED){
+		pf_update_env_page(env, wse->virtual_address, frame_info);
+		pt_set_page_permissions(env->env_page_directory, wse->virtual_address, 0, PERM_MODIFIED);
 
-
+	}
+	return frame_info;
+}
+void replace(struct WorkingSetElement* old, uint32 va, struct Env* env){
+	struct FrameInfo* frame_info = save(old, env);
+	struct WorkingSetElement* nxt = old->prev_next_info.le_next;
+	pt_set_page_permissions(env->env_page_directory, old->virtual_address, 0, PERM_PRESENT);
+	add(env, va, frame_info);
+	unmap_frame(env->env_page_directory, old->virtual_address);
+	old->virtual_address = va;
+	old->sweeps_counter = 0;
+	env->page_last_WS_element = nxt;
+}
 //==================================
 
 
@@ -184,7 +222,7 @@ void fault_handler(struct Trapframe *tf)
 					env_exit();
 				}
 			}
-			else if(!in_stack(fault_va)){
+			if(in_kernel(fault_va)){
 				env_exit();
 			}
 			if(!(perms & PERM_WRITEABLE) && (perms &PERM_PRESENT)){
@@ -259,22 +297,14 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		int iWS =faulted_env->page_last_WS_index;
 		uint32 wsSize = env_page_ws_get_size(faulted_env);
 #endif
-
 	if(wsSize < (faulted_env->page_WS_max_size))
 	{
 		//cprintf("PLACEMENT=========================WS Size = %d\n", wsSize );
 		//TODO: [PROJECT'24.MS2 - #09] [2] FAULT HANDLER I - Placement
 		// Write your code here, remove the panic and write your code
 		//panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
-		struct FrameInfo* frame_info;
-		allocate_frame(&frame_info);
-		map_frame(faulted_env->env_page_directory, frame_info, fault_va, PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
-		int ret = pf_read_env_page(faulted_env, (void*)fault_va);
-		if(ret != 0){
-			if(!in_stack(fault_va)&&!in_heap(fault_va))
-				env_exit();
-		}
-		add_wse(faulted_env, fault_va);
+		add(faulted_env, fault_va, NULL);
+		add_wse(faulted_env, fault_va, NULL);
 		//refer to the project presentation and documentation for details
 	}
 	else
@@ -283,7 +313,53 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		//refer to the project presentation and documentation for details
 		//TODO: [PROJECT'24.MS3] [2] FAULT HANDLER II - Replacement
 		// Write your code here, remove the panic and write your code
-		panic("page_fault_handler() Replacement is not implemented yet...!!");
+		//panic("page_fault_handler() Replacement is not implemented yet...!!");
+		fault_va = ROUNDDOWN(fault_va, PAGE_SIZE);
+
+		struct FrameInfo* frame_info;
+		struct WorkingSetElement* cur;
+		uint32* ptr_page_table;
+		LIST_FOREACH(cur, &faulted_env->page_WS_list){
+			frame_info= get_frame_info(faulted_env->env_page_directory, cur->virtual_address, &ptr_page_table);
+			if(frame_info->va == cur->virtual_address)
+				break;
+			frame_info->va = cur->virtual_address;
+		}
+		cur = faulted_env->page_last_WS_element;
+		int N = page_WS_max_sweeps;
+		if(N == 0)
+			N = 1;
+		uint8 modified = N > 0 ? 0 : 1;
+		if(modified)
+			N = -N;
+		while(1){
+			if(cur == NULL){
+				cur = faulted_env->page_WS_list.lh_first;
+			}
+			uint32 perms= pt_get_page_permissions(faulted_env->env_page_directory, cur->virtual_address);
+			uint32 used = perms & PERM_USED;
+			if(used != 0){
+				pt_set_page_permissions(faulted_env->env_page_directory, cur->virtual_address, 0, PERM_USED);
+				cur->sweeps_counter = 0;
+				cur = cur->prev_next_info.le_next;
+				continue;
+			}
+			else
+				cur->sweeps_counter++;
+			uint32 req = N;
+			if(modified)
+				if(perms & PERM_MODIFIED)
+					req++;
+			if(cur->sweeps_counter == req){
+				replace(cur, fault_va, faulted_env);
+			}
+			else{
+				cur = cur->prev_next_info.le_next;
+				continue;
+			}
+			break;
+
+		}
 	}
 }
 
