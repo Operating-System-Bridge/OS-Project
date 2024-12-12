@@ -385,6 +385,7 @@ struct Env* fos_scheduler_PRIRR()
 	struct Env *cur_env = get_cpu_proc();
 	if (cur_env != NULL)
 	{
+		cur_env->prrrticks = ticks;
 		enqueue(&(ProcessQueues.env_ready_queues[cur_env->priority]), cur_env);
 	}
 	int pr = -1;
@@ -416,7 +417,25 @@ void clock_interrupt_handler(struct Trapframe* tf)
 		//TODO: [PROJECT'24.MS3 - #09] [3] PRIORITY RR Scheduler - clock_interrupt_handler
 		//Your code is here
 		//Comment the following line
-		panic("Not implemented yet");
+		//panic("Not implemented yet");
+		/*
+		 *
+This handler is automatically called every “quantum” period
+Should be used to promote any process that exceeds the starvation threshold
+IF #TICKS IT EXCEEDS THE STARVATION THRESHOLD
+		 *
+		 */
+
+			for(int i= 1;i<num_of_ready_queues;i++){
+		   //  enqueue(&(ProcessQueues.env_ready_queues[i-1]), dequeue(&(ProcessQueues.env_ready_queues[i])));
+				struct Env * ptr_env=NULL;
+				LIST_FOREACH(ptr_env, &(ProcessQueues.env_ready_queues[i])){
+		         if(ticks - ptr_env->prrrticks > starv_thresh){
+		        	 ptr_env->prrrticks = ticks;
+					 env_set_priority(ptr_env->env_id,i-1);
+		         }
+		        }
+		}
 	}
 
 
