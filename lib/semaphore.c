@@ -9,22 +9,16 @@ struct semaphore create_semaphore(char *semaphoreName, uint32 value)
 //    panic("create_semaphore is not implemented yet");
     //Your Code is Here...
 
-    struct semaphore *curSemphore = smalloc(semaphoreName, sizeof(struct semaphore), 1);
-    cprintf("Smalloced\n");
-    if(curSemphore == NULL)
-    {
-        panic("Not enough memory\n");
-    }
-    cprintf("WILL SET COUNT NOW\n");
-    curSemphore->semdata = malloc(sizeof(struct __semdata));
-    curSemphore->semdata->count = value;
+    struct semaphore curSemphore;
+    curSemphore.semdata = smalloc(semaphoreName, sizeof(struct __semdata*), 1);
+    curSemphore.semdata->count = value;
     cprintf("Set count value\n");
-    strncpy(curSemphore->semdata->name, semaphoreName, sizeof(curSemphore->semdata->name) - 1);
+    strncpy(curSemphore.semdata->name, semaphoreName, sizeof(curSemphore.semdata->name) - 1);
     cprintf("Set name\n");
-    curSemphore->semdata->lock = 0;
+    curSemphore.semdata->lock = 0;
     cprintf("Set lock and returning\n");
 
-    return *curSemphore;
+    return curSemphore;
 
 }
 struct semaphore get_semaphore(int32 ownerEnvID, char* semaphoreName)
@@ -33,8 +27,9 @@ struct semaphore get_semaphore(int32 ownerEnvID, char* semaphoreName)
     //COMMENT THE FOLLOWING LINE BEFORE START CODING
 //    panic("get_semaphore is not implemented yet");
     //Your Code is Here...
-    struct semaphore *ret = sget(ownerEnvID, semaphoreName);
-    return *ret;
+	struct semaphore ret;
+    ret.semdata = sget(ownerEnvID, semaphoreName);
+    return ret;
 
 }
 

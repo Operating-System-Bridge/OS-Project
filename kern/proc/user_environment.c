@@ -603,7 +603,7 @@ void yield(void)
 void sched(void)
 {
 
-	cprintf("inside sched\n");
+//	cprintf("inside sched\n");
 	int intena;
 	struct Env *p = get_cpu_proc();
 	assert(p != NULL);
@@ -620,7 +620,7 @@ void sched(void)
 	if(read_eflags()&FL_IF)
 		panic("sched is interruptible!");
 	intena = mycpu()->intena;
-	cprintf("passed sched\n");
+//	cprintf("passed sched\n");
 	context_switch(&(p->context), mycpu()->scheduler);
 	mycpu()->intena = intena;
 

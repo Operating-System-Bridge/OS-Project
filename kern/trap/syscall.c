@@ -366,26 +366,27 @@ void sys_wait_semaphore(struct semaphore *sem)
 
 
 		while(xchg(&(sem->semdata->lock),1)!= 0);
-		cprintf("enter the fun\n");
+//		cprintf("enter the fun\n");
 
 	    // decrement the counter
 	    sem->semdata->count--;
 
 	    if(sem->semdata->count < 0){
-	    	cprintf("count neg\n");
+//	    	cprintf("count neg\n");
 	        // put the process on blocked queue
 	        struct Env *env= get_cpu_proc();
 
 	        enqueue(&(sem->semdata->queue),env);
 	        env->env_status = ENV_BLOCKED;
-	        cprintf("process blocked\n");
+//	        cprintf("process blocked\n");
 	        acquire_spinlock(&(ProcessQueues.qlock));
-	        cprintf("acq the lock\n");
-	        sched();
-	        cprintf("sched called\n");
 	        sem->semdata->lock = 0;
+//	        cprintf("acq the lock\n");
+	        sched();
+//	        cprintf("sched called\n");
+
 	        release_spinlock(&(ProcessQueues.qlock));
-	        cprintf("done\n");
+//	        cprintf("done\n");
 	        return;
 	    }
 	    cprintf("count non neg\n");
@@ -401,18 +402,18 @@ void sys_signal_semaphore(struct semaphore *sem)
 	    //COMMENT THE FOLLOWING LINE BEFORE START CODING
 	    //panic("signal_semaphore is not implemented yet");
 	    //Your Code is Here...
-
+		cprintf("Didn't acquire yet\n");
 	    while(xchg(&(sem->semdata->lock),1)!= 0);
 		acquire_spinlock(&(ProcessQueues.qlock));
 		// increment the counter
-
+		cprintf("Acquired the lock\n");
 		sem->semdata->count++;
 		if(sem->semdata->count <= 0){
 			// remove a process from the queue
+
 			struct Env *env = dequeue(&(sem->semdata->queue));
 			// put it on ready queue
 			sched_insert_ready(env);
-			sem->semdata->lock = 0;
 			sched();
 		}
 		sem->semdata->lock = 0;
