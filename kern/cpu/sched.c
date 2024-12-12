@@ -251,7 +251,12 @@ void sched_init_PRIRR(uint8 numOfPriorities, uint8 quantum, uint32 starvThresh)
 	//Comment the following line
 	//panic("Not implemented yet");
 
-
+/*
+ Initialize the Priority RR scheduler by the given number of priorities, CPU quantum (in millisecond) and starvation threshold
+Do other initializations (if any)
+Should use the following global variables for initialization (declared in kern/cpu/sched.h)
+ *
+ */
    sched_delete_ready_queues();
    acquire_spinlock(&ProcessQueues.qlock);
    ProcessQueues.env_ready_queues = kmalloc(numOfPriorities * sizeof(struct Env_Queue));
@@ -357,7 +362,47 @@ struct Env* fos_scheduler_PRIRR()
 	//TODO: [PROJECT'24.MS3 - #08] [3] PRIORITY RR Scheduler - fos_scheduler_PRIRR
 	//Your code is here
 	//Comment the following line
-	panic("Not implemented yet");
+	/*struct Env *next_env = NULL;
+	struct Env *cur_env = get_cpu_proc();
+	//If the curenv is still exist, then insert it again in the ready queue
+	if (cur_env != NULL)
+	{
+		enqueue(&(ProcessQueues.env_ready_queues[0]), cur_env);
+	}
+
+	//Pick the next environment from the ready queue
+	next_env = dequeue(&(ProcessQueues.env_ready_queues[0]));
+
+	//Reset the quantum
+	//2017: Reset the value of CNT0 for the next clock interval
+	kclock_set_quantum(quantums[0]);
+	//uint16 cnt0 = kclock_read_cnt0_latch() ;
+	//cprintf("CLOCK INTERRUPT AFTER RESET: Counter0 Value = %d\n", cnt0 );
+
+	return next_env;
+	panic("Not implemented yet");*/
+	struct Env *next_env = NULL;
+	struct Env *cur_env = get_cpu_proc();
+	if (cur_env != NULL)
+	{
+		enqueue(&(ProcessQueues.env_ready_queues[cur_env->priority]), cur_env);
+	}
+	int pr = -1;
+	for(int i=0;i<num_of_ready_queues;i++){//search for the first un empty ready queue
+		if(queue_size(&(ProcessQueues.env_ready_queues[i]))){
+			pr = i;
+			break;
+		}
+	}
+	if(pr==-1){// all ready queues is empty
+		next_env = NULL;
+		if(num_of_ready_queues)
+		  kclock_set_quantum(quantums[0]);
+		return NULL;
+	}
+	next_env = dequeue(&(ProcessQueues.env_ready_queues[pr]));
+	kclock_set_quantum(quantums[pr]);
+	return next_env;
 }
 
 //========================================
