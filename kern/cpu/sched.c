@@ -253,6 +253,7 @@ void sched_init_PRIRR(uint8 numOfPriorities, uint8 quantum, uint32 starvThresh)
 
 
    sched_delete_ready_queues();
+   acquire_spinlock(&ProcessQueues.qlock);
    ProcessQueues.env_ready_queues = kmalloc(numOfPriorities * sizeof(struct Env_Queue));
    quantums = kmalloc(numOfPriorities * sizeof(uint8));
    scheduler_method = SCH_PRIRR;
@@ -264,6 +265,7 @@ void sched_init_PRIRR(uint8 numOfPriorities, uint8 quantum, uint32 starvThresh)
 	      quantums[i] = quantum;
 	 }
 
+	 release_spinlock(&ProcessQueues.qlock);
 	//=========================================
 	//DON'T CHANGE THESE LINES=================
 	uint16 cnt0 = kclock_read_cnt0_latch() ; //read after write to ensure it's set to the desired value
