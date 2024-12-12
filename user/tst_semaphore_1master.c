@@ -19,9 +19,9 @@ _main(void)
 	sys_run_env(id2);
 	sys_run_env(id3);
 
-//	wait_semaphore(depend1);
-//	wait_semaphore(depend1);
-//	wait_semaphore(depend1);
+	wait_semaphore(depend1);
+	wait_semaphore(depend1);
+	wait_semaphore(depend1);
 
 	int sem1val = semaphore_count(cs1);
 	int sem2val = semaphore_count(depend1);

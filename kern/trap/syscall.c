@@ -363,22 +363,34 @@ void sys_set_uheap_strategy(uint32 heapStrategy)
 void sys_wait_semaphore(struct semaphore *sem)
 {
 
-		acquire_spinlock(&(ProcessQueues.qlock));
-		while(xchg(&(sem->semdata->lock), 1) != 0);
+
+
+		while(xchg(&(sem->semdata->lock),1)!= 0);
+		cprintf("enter the fun\n");
 
 	    // decrement the counter
 	    sem->semdata->count--;
 
 	    if(sem->semdata->count < 0){
-
+	    	cprintf("count neg\n");
 	        // put the process on blocked queue
 	        struct Env *env= get_cpu_proc();
 
 	        enqueue(&(sem->semdata->queue),env);
+	        env->env_status = ENV_BLOCKED;
+	        cprintf("process blocked\n");
+	        acquire_spinlock(&(ProcessQueues.qlock));
+	        cprintf("acq the lock\n");
+	        sched();
+	        cprintf("sched called\n");
 	        sem->semdata->lock = 0;
+	        release_spinlock(&(ProcessQueues.qlock));
+	        cprintf("done\n");
+	        return;
 	    }
+	    cprintf("count non neg\n");
 	    sem->semdata->lock = 0;
-	    release_spinlock(&(ProcessQueues.qlock));
+
 }
 
 
@@ -389,8 +401,9 @@ void sys_signal_semaphore(struct semaphore *sem)
 	    //COMMENT THE FOLLOWING LINE BEFORE START CODING
 	    //panic("signal_semaphore is not implemented yet");
 	    //Your Code is Here...
+
+	    while(xchg(&(sem->semdata->lock),1)!= 0);
 		acquire_spinlock(&(ProcessQueues.qlock));
-		while(xchg(&(sem->semdata->lock), 1) != 0);
 		// increment the counter
 
 		sem->semdata->count++;
@@ -399,6 +412,8 @@ void sys_signal_semaphore(struct semaphore *sem)
 			struct Env *env = dequeue(&(sem->semdata->queue));
 			// put it on ready queue
 			sched_insert_ready(env);
+			sem->semdata->lock = 0;
+			sched();
 		}
 		sem->semdata->lock = 0;
 		release_spinlock(&(ProcessQueues.qlock));
