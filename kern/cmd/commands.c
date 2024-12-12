@@ -89,6 +89,8 @@ struct Command commands[] =
 		{ "schedMLFQ", "switch the scheduler to MLFQ with given # queues & quantums", command_sch_MLFQ, -1},
 		{"load", "load a single user program to mem with status = NEW", commnad_load_env, -1},
 		{"tst", "run the given test", command_tst, -1},
+		//[MS3 - #07] [3] PRIORITY RR Scheduler - sched_init_PRIRR
+		{"schedPRIRR", "Switch and Initialize the scheduler to priority RR", command_schedPRIRR, -1},
 };
 
 //Number of commands = size of the array / size of command structure
@@ -912,4 +914,22 @@ int command_get_modified_buffer_length(int number_of_arguments, char **arguments
 int command_tst(int number_of_arguments, char **arguments)
 {
 	return tst_handler(number_of_arguments, arguments);
+}
+
+//[MS3 - #07] [3] PRIORITY RR Scheduler - sched_init_PRIRR
+int command_schedPRIRR(int number_of_arguments, char **arguments)
+{
+	if(number_of_arguments == 4)
+	{
+		uint8 numOfPriorities = strtol(arguments[1],NULL, 10);
+		uint8 quantum =  strtol(arguments[2],NULL, 10);
+		uint32 starvThresh =  strtol(arguments[3],NULL, 10);
+		sched_init_PRIRR(numOfPriorities, quantum, starvThresh);
+		cprintf("%d %d %d\n",numOfPriorities, quantum, starvThresh);
+	}
+	else
+	{
+		cprintf("number of arguments is not 4\n");
+	}
+	return 0;
 }
