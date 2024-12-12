@@ -12,11 +12,8 @@ struct semaphore create_semaphore(char *semaphoreName, uint32 value)
     struct semaphore curSemphore;
     curSemphore.semdata = smalloc(semaphoreName, sizeof(struct __semdata*), 1);
     curSemphore.semdata->count = value;
-    cprintf("Set count value\n");
     strncpy(curSemphore.semdata->name, semaphoreName, sizeof(curSemphore.semdata->name) - 1);
-    cprintf("Set name\n");
     curSemphore.semdata->lock = 0;
-    cprintf("Set lock and returning\n");
 
     return curSemphore;
 
@@ -48,8 +45,8 @@ void signal_semaphore(struct semaphore sem)
     //COMMENT THE FOLLOWING LINE BEFORE START CODING
     //panic("signal_semaphore is not implemented yet");
     //Your Code is Here...
-
     sys_signal_semaphore(&sem);
+
 }
 
 int semaphore_count(struct semaphore sem)

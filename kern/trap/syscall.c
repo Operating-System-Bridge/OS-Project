@@ -414,7 +414,6 @@ void sys_signal_semaphore(struct semaphore *sem)
 			struct Env *env = dequeue(&(sem->semdata->queue));
 			// put it on ready queue
 			sched_insert_ready(env);
-			sched();
 		}
 		sem->semdata->lock = 0;
 		release_spinlock(&(ProcessQueues.qlock));
