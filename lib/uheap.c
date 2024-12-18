@@ -1,5 +1,5 @@
 #include <inc/lib.h>
-uint32 mazen[122879]={0};//marked - > va , unmarked -> 0
+uint32 mazen[122879]={0}, mazen2[122879]={0};//marked - > va , unmarked -> 0
 //==================================================================================//
 //============================ REQUIRED FUNCTIONS ==================================//
 //==================================================================================//
@@ -136,7 +136,7 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 				return NULL;
 			sys_allocate_user_mem(va, req * PAGE_SIZE);
 			for(uint32 k = 0; k < req; k++)
-				mazen[j - k] = va;
+				mazen[j - k] = va, mazen2[j - k] = ret;
 			return (void *)va;
 
 		}
@@ -173,7 +173,7 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 				return NULL;
 			sys_allocate_user_mem(va, req * PAGE_SIZE);
 			for(uint32 k = 0; k < req; k++)
-				mazen[j - k] = va;
+				mazen[j - k] = va, mazen2[j - k] = ret;
 			return (void *)va;
 
 		}
@@ -202,7 +202,30 @@ void sfree(void* virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [USER SIDE] - sfree()
 	// Write your code here, remove the panic and write your code
-	panic("sfree() is not implemented yet...!!");
+//	panic("sfree() is not implemented yet...!!");
+	uint32 size = 0;
+	uint32 st_page =myEnv->hlimit + PAGE_SIZE;
+	uint32 curVa = st_page;
+
+	int done = 0, val = -1;
+	for(int i=0;i<122879;i++){
+		if(mazen[i]==(uint32)virtual_address){
+			val = mazen2[i];
+			mazen2[i] = 0;
+			mazen[i]=0;
+			done = 1;
+			size+=PAGE_SIZE;
+		}else if(done==1){
+			break;
+		}
+		else
+			curVa += PAGE_SIZE;
+	}
+	if(done)
+		sys_freeSharedObject((uint32)val, (void *)curVa), sys_free_user_mem((uint32)curVa,size);
+
+
+
 }
 
 
