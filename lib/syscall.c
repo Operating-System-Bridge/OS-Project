@@ -311,9 +311,38 @@ void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 	syscall(SYS_allocate_user_mem,virtual_address, size, 0, 0, 0);
 }
 
+
 //MS3
 void sys_env_set_priority(int32 envID, int priority)
 {
 	syscall(SYS_env_set_priority, envID, priority, 0, 0, 0);
+}
+void sys_wait_semaphore(struct semaphore *sem)
+{
+	syscall(SYS_wait_semaphore, (uint32)sem, 0, 0, 0, 0);
+}
+void sys_signal_semaphore(struct semaphore *sem)
+{
+	syscall(SYS_signal_semaphore, (uint32)sem, 0, 0, 0, 0);
+}
+
+void sys_enqueue(struct Env_Queue* q, struct Env* e)
+{
+	syscall(SYS_enqueue, (uint32)q, (uint32)e, 0, 0, 0);
+}
+
+struct Env* sys_dequeue(struct Env_Queue* e)
+{
+	return (struct Env*) syscall(SYS_dequeue, (uint32) e, 0, 0, 0, 0);
+}
+
+void sys_init_queue(struct Env_Queue* e)
+{
+	syscall(SYS_init_queue, (uint32)e, 0, 0, 0, 0);
+
+}
+struct Env* sys_get_cpu_proc()
+{
+	return (struct Env*)syscall(SYS_get_cpu_proc, 0, 0, 0, 0, 0);
 }
 

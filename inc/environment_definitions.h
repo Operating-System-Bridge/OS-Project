@@ -125,6 +125,7 @@ struct Env {
 	uint32 strt; // Start of the heap for this process
 	uint32 brk;  // The current break pointer
 	uint32 hlimit; // The hard limit for the heap of this process
+	uint32 numOfPages;
 	//=======================================================================
 	//for page file management
 	uint32* disk_env_pgdir;
