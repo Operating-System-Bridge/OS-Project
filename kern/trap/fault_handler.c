@@ -332,6 +332,9 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		uint8 modified = N > 0 ? 0 : 1;
 		if(modified)
 			N = -N;
+		uint32 rems = 1;
+		uint32 min_rem = N;
+		struct WorkingSetElement* beg = cur;
 		while(1){
 			if(cur == NULL){
 				cur = faulted_env->page_WS_list.lh_first;
@@ -345,20 +348,23 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 				continue;
 			}
 			else
-				cur->sweeps_counter++;
+				cur->sweeps_counter+=rems;
 			uint32 req = N;
 			if(modified)
 				if(perms & PERM_MODIFIED)
 					req++;
+			uint32 rem = req - cur->sweeps_counter;
+			min_rem = rem < min_rem? rem : min_rem;
 			if(cur->sweeps_counter == req){
 				replace(cur, fault_va, faulted_env);
 			}
 			else{
 				cur = cur->prev_next_info.le_next;
+				if(cur == beg)
+					rems = min_rem;
 				continue;
 			}
 			break;
-
 		}
 	}
 }
