@@ -167,7 +167,7 @@ void* sys_sbrk(int numOfPages)
 			*ptr = 1;
 			newBrk += sizeof(int);
 			env->brk = newBrk;
-			//allocate_user_mem(env, ROUNDUP(ret,PAGE_SIZE), numOfPages * PAGE_SIZE);
+			allocate_user_mem(env, ROUNDUP(ret,PAGE_SIZE), numOfPages * PAGE_SIZE);
 			// This leads to an additional page allocated
 		}
 
@@ -191,7 +191,8 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 	/* page size is 4KB = 2^12 */
 	//uint32 page_size = (1 << 12);
 
-	uint32 pages = size/PAGE_SIZE;
+	uint32 pages = (size + PAGE_SIZE + -1)/PAGE_SIZE;
+	e->numOfPages += pages;
 	uint32 *ptr_page_table = NULL;
 	//cprintf("pages : %d\n",pages);
 	for(int i=0 ; i < pages ; i++)
@@ -224,20 +225,40 @@ void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 
     //TODO: [PROJECT'24.MS2 - BONUS#3] [3] USER HEAP [KERNEL SIDE] - O(1) free_user_mem
 
-    uint32 pages = size/PAGE_SIZE;
+    uint32 pages = (size + PAGE_SIZE + -1)/PAGE_SIZE, va = virtual_address;
     uint32 *ptr_page_table = NULL;
     struct WorkingSetElement *page_ws_element;
-
+    e->numOfPages -= pages;
+    uint32 *lst_ptr_page = NULL;
     for(int i=0 ; i < pages ; i++)
     {
         /* remove the marked permission for every page entry */
-        pt_set_page_permissions(e->env_page_directory, virtual_address, 0, PERM_MARKED);
-        pf_remove_env_page(e, virtual_address);
-        env_page_ws_invalidate(e, virtual_address);
+    	if(get_page_table(e->env_page_directory, virtual_address, &ptr_page_table) == TABLE_IN_MEMORY)
+    	{
+			pt_set_page_permissions(e->env_page_directory, virtual_address, 0, PERM_MARKED);
+			pf_remove_env_page(e, virtual_address);
+			env_page_ws_invalidate(e, virtual_address);
+			if(ptr_page_table != lst_ptr_page)
+			{
+				bool can = 1;
+				for (int i = 0; i < 1024; i++) {
+						if (ptr_page_table[i])
+							can = 0;
+					}
+				if(can)
+				{
+					pd_clear_page_dir_entry(e->env_page_directory, (uint32)virtual_address);
+					kfree(ptr_page_table);
+
+				}
+				ptr_page_table = lst_ptr_page;
+			}
+    	}
         /* un-map the frame of the page and add it to the free frame list if the references is 0 */
 
         virtual_address += PAGE_SIZE;
     }
+
 }
 
 //=====================================
