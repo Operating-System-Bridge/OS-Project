@@ -4,6 +4,7 @@
 /* system call numbers */
 enum
 {
+
     SYS_cputs = 0,
     SYS_cputc,
     SYS_cgetc,
@@ -58,11 +59,13 @@ enum
     SYS_enqueue,
     SYS_get_cpu_proc,
     SYS_init_queue,
+    SYS_env_set_priority,
     //=====================================================================
 
 
 
     NSYSCALLS
+
 };
 
 #endif /* !FOS_INC_SYSCALL_H */

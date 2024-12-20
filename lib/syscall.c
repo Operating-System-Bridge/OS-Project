@@ -311,6 +311,12 @@ void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 	syscall(SYS_allocate_user_mem,virtual_address, size, 0, 0, 0);
 }
 
+
+//MS3
+void sys_env_set_priority(int32 envID, int priority)
+{
+	syscall(SYS_env_set_priority, envID, priority, 0, 0, 0);
+}
 void sys_wait_semaphore(struct semaphore *sem)
 {
 	syscall(SYS_wait_semaphore, (uint32)sem, 0, 0, 0, 0);

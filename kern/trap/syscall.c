@@ -355,6 +355,13 @@ void sys_set_uheap_strategy(uint32 heapStrategy)
 	_UHeapPlacementStrategy = heapStrategy;
 }
 
+//MS3
+void sys_env_set_priority(int32 envID, int priority)
+{
+	env_set_priority(envID, priority);
+	return;
+}
+
 /*******************************/
 /* SEMAPHORES SYSTEM CALLS */
 /*******************************/
@@ -588,6 +595,11 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 	// Return any appropriate return value.
 	switch(syscallno)
 	{
+	//MS3
+	case SYS_env_set_priority:
+		sys_env_set_priority(a1,a2);
+		return 0;
+		break;
 	//TODO: [PROJECT'24.MS1 - #02] [2] SYSTEM CALLS - Add suitable code here
 	case SYS_sbrk:
 		return (uint32)sys_sbrk(a1);
