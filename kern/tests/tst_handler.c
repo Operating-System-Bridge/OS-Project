@@ -247,8 +247,8 @@ int tst_dyn_alloc(int number_of_arguments, char **arguments)
 	// Test 8 Example for realloc_block_ff: tstdynalloc reallocFF
 	else if(strcmp(arguments[1], "reallocff") == 0)
 	{
-		test_realloc_block_FF();
-		//test_realloc_block_FF_COMPLETE();
+		//test_realloc_block_FF();
+		test_realloc_block_FF_COMPLETE();
 	}
 	return 0;
 }
@@ -413,6 +413,19 @@ int tst_kheap(int number_of_arguments, char **arguments)
 			//Test nextfit strategy
 			else if (testNum == 2)
 				test_kmalloc_nextfit();
+		}
+		return 0;
+	}
+	// Test Fast Implementation of kmalloc/kfree FF
+	else if(strcmp(arguments[2], "fast") == 0)
+	{
+		if(isKHeapPlacementStrategyFIRSTFIT())
+		{
+			//test_fastfirstfit();
+		}
+		else
+		{
+			panic("Fast implementation test is not yet handled for other strategies");
 		}
 		return 0;
 	}
