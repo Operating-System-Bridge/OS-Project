@@ -249,16 +249,32 @@ void sched_init_PRIRR(uint8 numOfPriorities, uint8 quantum, uint32 starvThresh)
 	//TODO: [PROJECT'24.MS3 - #07] [3] PRIORITY RR Scheduler - sched_init_PRIRR
 	//Your code is here
 	//Comment the following line
-	panic("Not implemented yet");
+	//panic("Not implemented yet");
 
+/*
+ Initialize the Priority RR scheduler by the given number of priorities, CPU quantum (in millisecond) and starvation threshold
+Do other initializations (if any)
+Should use the following global variables for initialization (declared in kern/cpu/sched.h)
+ *
+ */init_spinlock(&starv_qlock,"7mada");
 
+   sched_delete_ready_queues();
+   ProcessQueues.env_ready_queues = kmalloc(numOfPriorities * sizeof(struct Env_Queue));
+   quantums = kmalloc(numOfPriorities * sizeof(uint8));
 
+   kclock_set_quantum(quantum);
+   num_of_ready_queues = numOfPriorities;
 
+   sched_set_starv_thresh(starvThresh);
 
+   //acquire_spinlock(&ProcessQueues.qlock);
+   acquire_spinlock(&ProcessQueues.qlock);
+	for (int i = 0; i < numOfPriorities; i++) {
+	      init_queue(&ProcessQueues.env_ready_queues[i]);
+	      quantums[i] = quantum;
+	 }
 
-
-
-
+	release_spinlock(&ProcessQueues.qlock);
 	//=========================================
 	//DON'T CHANGE THESE LINES=================
 	uint16 cnt0 = kclock_read_cnt0_latch() ; //read after write to ensure it's set to the desired value
@@ -350,7 +366,50 @@ struct Env* fos_scheduler_PRIRR()
 	//TODO: [PROJECT'24.MS3 - #08] [3] PRIORITY RR Scheduler - fos_scheduler_PRIRR
 	//Your code is here
 	//Comment the following line
-	panic("Not implemented yet");
+	/*struct Env *next_env = NULL;
+	struct Env *cur_env = get_cpu_proc();
+	//If the curenv is still exist, then insert it again in the ready queue
+	if (cur_env != NULL)
+	{
+		enqueue(&(ProcessQueues.env_ready_queues[0]), cur_env);
+	}
+
+	//Pick the next environment from the ready queue
+	next_env = dequeue(&(ProcessQueues.env_ready_queues[0]));
+
+	//Reset the quantum
+	//2017: Reset the value of CNT0 for the next clock interval
+	kclock_set_quantum(quantums[0]);
+	//uint16 cnt0 = kclock_read_cnt0_latch() ;
+	//cprintf("CLOCK INTERRUPT AFTER RESET: Counter0 Value = %d\n", cnt0 );
+
+	return next_env;
+	panic("Not implemented yet");*/
+	struct Env *next_env = NULL;
+	struct Env *cur_env = get_cpu_proc();
+	if (cur_env != NULL)
+	{
+		cur_env->prrrticks = ticks;
+		enqueue(&(ProcessQueues.env_ready_queues[cur_env->priority]), cur_env);
+	}
+	int pr = -1;
+	for(int i=0;i<num_of_ready_queues;i++){//search for the first un empty ready queue
+		if(queue_size(&(ProcessQueues.env_ready_queues[i]))){
+			pr = i;
+			break;
+		}
+	}
+	if(pr==-1){// all ready queues is empty
+		next_env = NULL;
+		if(num_of_ready_queues)
+		  kclock_set_quantum(quantums[0]);
+		return NULL;
+	}
+	//if(next_env->prog_name == "fib")
+	//cprintf("next - >  %c \n",next_env->prog_name);
+	next_env = dequeue(&(ProcessQueues.env_ready_queues[pr]));
+	kclock_set_quantum(quantums[pr]);
+	return next_env;
 }
 
 //========================================
@@ -361,10 +420,30 @@ void clock_interrupt_handler(struct Trapframe* tf)
 {
 	if (isSchedMethodPRIRR())
 	{
+		//cprintf("starv_thresh = %d ,ticks = %d \n" ,starv_thresh,ticks);
 		//TODO: [PROJECT'24.MS3 - #09] [3] PRIORITY RR Scheduler - clock_interrupt_handler
 		//Your code is here
 		//Comment the following line
-		panic("Not implemented yet");
+		//panic("Not implemented yet");
+		/*
+		 *
+This handler is automatically called every “quantum” period
+Should be used to promote any process that exceeds the starvation threshold
+IF #TICKS IT EXCEEDS THE STARVATION THRESHOLD
+		 *
+		 */
+
+			for(int i= 1;i<num_of_ready_queues;i++){
+		   //  enqueue(&(ProcessQueues.env_ready_queues[i-1]), dequeue(&(ProcessQueues.env_ready_queues[i])));
+				struct Env * ptr_env=NULL;
+				LIST_FOREACH(ptr_env, &(ProcessQueues.env_ready_queues[i])){
+		         if(ticks - ptr_env->prrrticks >= starv_thresh){
+		      //  	 cprintf("global ticks : %d  promote - > %d env id : %d \n",ticks,ptr_env->prrrticks,ptr_env->env_id);
+		        	 ptr_env->prrrticks = ticks;
+					 env_set_priority(ptr_env->env_id,i-1);
+		         }
+		        }
+		}
 	}
 
 

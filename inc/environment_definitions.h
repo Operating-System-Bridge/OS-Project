@@ -99,6 +99,7 @@ struct Env {
 	//================
 	/*MAIN INFO...*/
 	//================
+	int64 prrrticks;
 	struct Trapframe *env_tf;		// Saved registers during the trap (at the top of the user kernel stack)
 	struct Context *context;		// Saved registers for context switching (env <--> scheduler) (below the trap frame at the user kernel stack)
 	LIST_ENTRY(Env) prev_next_info;	// Free list link pointers
@@ -124,6 +125,7 @@ struct Env {
 	uint32 strt; // Start of the heap for this process
 	uint32 brk;  // The current break pointer
 	uint32 hlimit; // The hard limit for the heap of this process
+	uint32 numOfPages;
 	//=======================================================================
 	//for page file management
 	uint32* disk_env_pgdir;

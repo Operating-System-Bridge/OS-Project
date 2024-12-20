@@ -355,12 +355,92 @@ void sys_set_uheap_strategy(uint32 heapStrategy)
 	_UHeapPlacementStrategy = heapStrategy;
 }
 
+//MS3
+void sys_env_set_priority(int32 envID, int priority)
+{
+	env_set_priority(envID, priority);
+	return;
+}
+
 /*******************************/
 /* SEMAPHORES SYSTEM CALLS */
 /*******************************/
 //[PROJECT'24.MS3] ADD SUITABLE CODE HERE
 
+void sys_wait_semaphore(struct semaphore *sem)
+{
 
+
+
+		while(xchg(&(sem->semdata->lock),1)!= 0);
+//		cprintf("enter the fun\n");
+
+	    // decrement the counter
+	    sem->semdata->count--;
+
+	    if(sem->semdata->count < 0){
+//	    	cprintf("count neg\n");
+	        // put the process on blocked queue
+	        struct Env *env= get_cpu_proc();
+
+	        enqueue(&(sem->semdata->queue),env);
+	        env->env_status = ENV_BLOCKED;
+//	        cprintf("process blocked\n");
+	        acquire_spinlock(&(ProcessQueues.qlock));
+	        sem->semdata->lock = 0;
+//	        cprintf("acq the lock\n");
+	        sched();
+//	        cprintf("sched called\n");
+
+	        release_spinlock(&(ProcessQueues.qlock));
+//	        cprintf("done\n");
+	        return;
+	    }
+	    cprintf("count non neg\n");
+	    sem->semdata->lock = 0;
+
+}
+
+
+void sys_signal_semaphore(struct semaphore *sem)
+{
+	cprintf("Signaling %d\n", sem->semdata->count);
+	//TODO: [PROJECT'24.MS3 - #05] [2] USER-LEVEL SEMAPHORE - signal_semaphore
+	    //COMMENT THE FOLLOWING LINE BEFORE START CODING
+	    //panic("signal_semaphore is not implemented yet");
+	    //Your Code is Here...
+		cprintf("Didn't acquire yet\n");
+	    while(xchg(&(sem->semdata->lock),1)!= 0);
+		acquire_spinlock(&(ProcessQueues.qlock));
+		// increment the counter
+		cprintf("Acquired the lock\n");
+		sem->semdata->count++;
+		if(sem->semdata->count <= 0){
+			// remove a process from the queue
+
+			struct Env *env = dequeue(&(sem->semdata->queue));
+			// put it on ready queue
+			sched_insert_ready(env);
+		}
+		sem->semdata->lock = 0;
+		release_spinlock(&(ProcessQueues.qlock));
+}
+
+struct Env* sys_dequeue(struct Env_Queue* e)
+{
+	return (struct Env*)0;
+}
+void sys_enqueue(struct Env_Queue* e, struct Env* z){
+	return;
+}
+struct Env*	sys_get_cpu_proc()
+{
+	return (struct Env*)0;
+}
+void sys_init_queue(struct Env_Queue* e)
+{
+	return;
+}
 /*******************************/
 /* SHARED MEMORY SYSTEM CALLS */
 /*******************************/
@@ -515,6 +595,11 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 	// Return any appropriate return value.
 	switch(syscallno)
 	{
+	//MS3
+	case SYS_env_set_priority:
+		sys_env_set_priority(a1,a2);
+		return 0;
+		break;
 	//TODO: [PROJECT'24.MS1 - #02] [2] SYSTEM CALLS - Add suitable code here
 	case SYS_sbrk:
 		return (uint32)sys_sbrk(a1);
@@ -690,6 +775,23 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 	case SYS_utilities:
 		sys_utilities((char*)a1, (int)a2);
 		return 0;
+	case SYS_wait_semaphore:
+		sys_wait_semaphore((struct semaphore*)a1);
+		return 0;
+	case SYS_signal_semaphore:
+		sys_signal_semaphore((struct semaphore*)a1);
+		return 0;
+	case SYS_dequeue:
+		return (uint32)sys_dequeue((struct Env_Queue*)a1);
+	case SYS_enqueue:
+		sys_enqueue((struct Env_Queue*)a1, (struct Env*)a2);
+		return 0;
+	case SYS_get_cpu_proc:
+		return (uint32)sys_get_cpu_proc();
+	case SYS_init_queue:
+		sys_init_queue((struct Env_Queue *)a1);
+		return 0;
+
 
 	case NSYSCALLS:
 		return 	-E_INVAL;

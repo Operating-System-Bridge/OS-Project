@@ -185,8 +185,7 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 	struct Share *newShare = create_share(ownerID, shareName, size, isWritable);
 	if(newShare == NULL)
 		return E_NO_SHARE;
-
-
+	uint32 *ptr_page_table = NULL;
 
 	for(uint32 va = (uint32)virtual_address, i = 0; i < req; va += PAGE_SIZE, i++)
 	{
@@ -194,6 +193,8 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 		allocate_frame(&curFrame);
 		map_frame(myenv->env_page_directory, curFrame, va, PERM_USER | PERM_WRITEABLE |PERM_PRESENT);
         newShare->framesStorage[i] = curFrame;
+
+
 	}
 	acquire_spinlock(&AllShares.shareslock);
 	LIST_INSERT_HEAD(&AllShares.shares_list, newShare);
@@ -216,17 +217,13 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 	if(curShare == NULL)
 		return E_SHARED_MEM_NOT_EXISTS;
 
-	struct FrameInfo *curFrame;
-	uint32 n = sizeof(curShare->framesStorage) / sizeof(curShare->framesStorage[0]);
-	curFrame = curShare->framesStorage[0];
+	uint32 n = (curShare->size + PAGE_SIZE - 1) / PAGE_SIZE;
 	for(uint32 i = 0, curVa = (uint32)virtual_address; i < n; i++, curVa += PAGE_SIZE)
 	{
 		if(curShare->isWritable == 1)
-			map_frame(myenv->env_page_directory, curFrame,curVa, PERM_USER | PERM_PRESENT | PERM_WRITEABLE);
+			map_frame(myenv->env_page_directory, curShare->framesStorage[i],curVa, PERM_USER | PERM_PRESENT | PERM_WRITEABLE);
 		else
-			map_frame(myenv->env_page_directory, curFrame,curVa, PERM_USER | PERM_PRESENT);
-		if(i != n - 1)
-			curFrame++;
+			map_frame(myenv->env_page_directory, curShare->framesStorage[i],curVa, PERM_USER | PERM_PRESENT);
 	}
 	curShare->references++;
 	return curShare->ID;
@@ -245,8 +242,12 @@ void free_share(struct Share* ptrShare)
 {
 	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [KERNEL SIDE] - free_share()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("free_share is not implemented yet");
+//	panic("free_share is not implemented yet");
 	//Your Code is Here...
+	LIST_REMOVE(&AllShares.shares_list, ptrShare);
+	kfree(ptrShare->framesStorage);
+	kfree(ptrShare);
+
 
 }
 //========================
@@ -256,7 +257,32 @@ int freeSharedObject(int32 sharedObjectID, void *startVA)
 {
 	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [KERNEL SIDE] - freeSharedObject()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("freeSharedObject is not implemented yet");
+//	panic("freeSharedObject is not implemented yet");
 	//Your Code is Here...
+	struct Share *curShare;
+	struct Env* myenv = get_cpu_proc();
+	acquire_spinlock(&AllShares.shareslock);
+	bool found = 0;
+	LIST_FOREACH(curShare, &AllShares.shares_list)
+	{
+		if(curShare->ID == sharedObjectID)
+		{
+			found = 1;
+			break;
+		}
+	}
+	if(!found)
+		return 0;
+	uint32 n = (curShare->size + PAGE_SIZE - 1) / PAGE_SIZE;
+	uint32 *pg = NULL;
+	for(uint32 i = 0, curVa = (uint32)startVA; i < n; i++, curVa += PAGE_SIZE)
+		unmap_frame(myenv->env_page_directory, curVa);
+	curShare->references--;
+	if(curShare->references == 0)
+		free_share(curShare);
+
+	release_spinlock(&AllShares.shareslock);
+	tlbflush();
+	return 1;
 
 }
