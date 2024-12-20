@@ -502,14 +502,38 @@ void *realloc_block_FF(void* va, uint32 new_size)
         		arr[i] = *((char*)va + i);
         	}
 
-        	free_block(va);
-        	void *new_block_address = alloc_block_FF(new_size - 8);
+        	/* check if there's any free space for the new_size */
+			struct BlockElement *targetBlock;
+			int curSize = 0;
+			short action = -1;
+			LIST_FOREACH(targetBlock, &freeBlocksList)
+			{
+				curSize = get_block_size(targetBlock);
+				if(curSize >= new_size)
+				{
+					action = (curSize - new_size < 4 * sizeof(int));
+					break;
+				}
+			}
+
+			/*
+			    if there's a free space then reallocate,
+			    else return the current address
+			*/
+			void *new_block_address;
+			if(action != -1)
+			{
+				free_block(va);
+				new_block_address = alloc_block_FF(new_size - 8);
+			}
+			else
+			new_block_address = va;
 
         	/*paste the data of the allocated block to the new block after reallocation*/
-        	for(int i=0 ; i < actual_size; i++)
-        	{
-        		*((char*)new_block_address + i) = arr[i];
-        	}
+			for(int i=0 ; i < actual_size; i++)
+			{
+				*((char*)new_block_address + i) = arr[i];
+			}
         	return new_block_address;
         }
 
