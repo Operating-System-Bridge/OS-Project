@@ -222,7 +222,7 @@ void sfree(void* virtual_address)
 			curVa += PAGE_SIZE;
 	}
 	if(done)
-		sys_freeSharedObject((uint32)val, (void *)curVa), sys_free_user_mem((uint32)curVa,size);
+		sys_free_user_mem((uint32)curVa,size), sys_freeSharedObject((uint32)val, (void *)curVa);
 
 
 

@@ -233,27 +233,28 @@ void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
     for(int i=0 ; i < pages ; i++)
     {
         /* remove the marked permission for every page entry */
-    	if(get_page_table(e->env_page_directory, virtual_address, &ptr_page_table) == TABLE_IN_MEMORY)
-    	{
-			pt_set_page_permissions(e->env_page_directory, virtual_address, 0, PERM_MARKED);
-			pf_remove_env_page(e, virtual_address);
-			env_page_ws_invalidate(e, virtual_address);
-			if(ptr_page_table != lst_ptr_page)
-			{
-				bool can = 1;
-				for (int i = 0; i < 1024; i++) {
-						if (ptr_page_table[i])
-							can = 0;
-					}
-				if(can)
-				{
-					pd_clear_page_dir_entry(e->env_page_directory, (uint32)virtual_address);
-					kfree(ptr_page_table);
-
-				}
-				ptr_page_table = lst_ptr_page;
-			}
-    	}
+    	pt_set_page_permissions(e->env_page_directory, virtual_address, 0, PERM_MARKED);
+    			pf_remove_env_page(e, virtual_address);
+    			env_page_ws_invalidate(e, virtual_address);
+//    	if(get_page_table(e->env_page_directory, virtual_address, &ptr_page_table) == TABLE_IN_MEMORY)
+//    	{
+//
+//			if(ptr_page_table != lst_ptr_page)
+//			{
+//				bool can = 1;
+//				for (int i = 0; i < 1024; i++) {
+//						if (ptr_page_table[i])
+//							can = 0;
+//					}
+//				if(can)
+//				{
+//					pd_clear_page_dir_entry(e->env_page_directory, (uint32)virtual_address);
+//					kfree(ptr_page_table);
+//
+//				}
+//				ptr_page_table = lst_ptr_page;
+//			}
+//    	}
         /* un-map the frame of the page and add it to the free frame list if the references is 0 */
 
         virtual_address += PAGE_SIZE;
