@@ -47,6 +47,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 
     //3- Remember: call the initialize_dynamic_allocator(..) to complete the initialization
     initialize_dynamic_allocator (daStart,initSizeToAllocate);
+    init_spinlock(&kheap_spin,"kernel heap spin lock");
     return 0;
 }
 
@@ -95,16 +96,29 @@ void* sbrk(int numOfPages)
 void* kmalloc(unsigned int size)
 {
 
+	acquire_spinlock(&kheap_spin);
 		if(size <= DYN_ALLOC_MAX_BLOCK_SIZE){
 			// use "isKHeapPlacementStrategyFIRSTFIT() ..." functions to check the current strategy
 			if(isKHeapPlacementStrategyFIRSTFIT())
-			{	return alloc_block_FF(size);}
+			{
+				release_spinlock(&kheap_spin);
+				return alloc_block_FF(size);
+			}
 			else if(isKHeapPlacementStrategyBESTFIT())
-			{return alloc_block_BF(size);}
+			{
+				release_spinlock(&kheap_spin);
+				return alloc_block_BF(size);
+			}
 			else if(isKHeapPlacementStrategyNEXTFIT())
-			{return alloc_block_NF(size);}
+			{
+				release_spinlock(&kheap_spin);
+			    return alloc_block_NF(size);
+			}
 			else if(isKHeapPlacementStrategyWORSTFIT())
-			{return alloc_block_WF(size);}
+			{
+				release_spinlock(&kheap_spin);
+				return alloc_block_WF(size);
+			}
 		}
 	uint32 numOfPages = ROUNDUP(size, PAGE_SIZE)/PAGE_SIZE;
 
@@ -114,6 +128,7 @@ void* kmalloc(unsigned int size)
 	struct FrameInfo *lst = NULL;
 	for(uint32 i = startPageAllocator; i<KERNEL_HEAP_MAX;)
 	{
+
 		struct FrameInfo *temp = get_frame_info(ptr_page_directory , i ,&curFrame);
 		if(temp == NULL)
 			cur++;
@@ -174,6 +189,8 @@ void* kmalloc(unsigned int size)
                 	}
                 }
 			}
+
+			release_spinlock(&kheap_spin);
 			return (uint32*)initial;
 
 		}
@@ -181,6 +198,7 @@ void* kmalloc(unsigned int size)
 	}
 
 
+   release_spinlock(&kheap_spin);
    return NULL;
 
 }
@@ -198,6 +216,7 @@ void kfree(void* virtual_address)
     }else if(virtual_address >= (void *)(page_alloc_st) && virtual_address < (void *) KERNEL_HEAP_MAX ){
     	uint32 *tempp;
     //	struct FrameInfo *frame = get_frame_info(ptr_page_directory , (uint32)virtual_address ,&tempp);
+    	acquire_spinlock(&kheap_spin);
     	uint32 curr_va = get_frame_info(ptr_page_directory , (uint32)virtual_address ,&tempp)->va;
     	uint32 before = get_frame_info(ptr_page_directory , (uint32)virtual_address ,&tempp)->before;
     	uint32 after = get_frame_info(ptr_page_directory , (uint32)virtual_address ,&tempp)->after;
@@ -233,7 +252,7 @@ void kfree(void* virtual_address)
     	    		unmap_frame(ptr_page_directory,curr_va);
     	    	//	cprintf("after\n");
     	 }
-
+    	release_spinlock(&kheap_spin);
     }else{
     	panic("");
     }

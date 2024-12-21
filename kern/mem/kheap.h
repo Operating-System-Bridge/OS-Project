@@ -46,4 +46,5 @@ uint32 kheap_st;//start
 uint32 kheap_sbrk;//segment break
 uint32 kheap_hlim;//hard limit
 uint32 startPageAllocator;
+struct spinlock kheap_spin;
 #endif // FOS_KERN_KHEAP_H_
