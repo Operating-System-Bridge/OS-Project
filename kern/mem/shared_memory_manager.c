@@ -277,6 +277,29 @@ int freeSharedObject(int32 sharedObjectID, void *startVA)
 	uint32 *pg = NULL;
 	for(uint32 i = 0, curVa = (uint32)startVA; i < n; i++, curVa += PAGE_SIZE)
 		unmap_frame(myenv->env_page_directory, curVa);
+	uint32 *ptr_page_table = NULL, *lst_ptr_page = NULL;
+	for(uint32 i = 0, curVa = (uint32)startVA; i < n; i++, curVa += PAGE_SIZE)
+	{
+    	if(get_page_table(myenv->env_page_directory, curVa, &ptr_page_table) == TABLE_IN_MEMORY)
+    	{
+
+			if(ptr_page_table != lst_ptr_page)
+			{
+				bool can = 1;
+				for (int i = 0; i < 1024; i++) {
+						if (ptr_page_table[i])
+							can = 0;
+					}
+				if(can)
+				{
+					pd_clear_page_dir_entry(myenv->env_page_directory, (uint32)curVa);
+					kfree(ptr_page_table);
+
+				}
+				ptr_page_table = lst_ptr_page;
+			}
+    	}
+	}
 	curShare->references--;
 	if(curShare->references == 0)
 		free_share(curShare);
