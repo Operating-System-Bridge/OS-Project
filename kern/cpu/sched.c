@@ -256,7 +256,7 @@ void sched_init_PRIRR(uint8 numOfPriorities, uint8 quantum, uint32 starvThresh)
 Do other initializations (if any)
 Should use the following global variables for initialization (declared in kern/cpu/sched.h)
  *
- */init_spinlock(&starv_qlock,"7mada");
+ *///init_spinlock(&starv_qlock,"7mada");
 
    sched_delete_ready_queues();
    ProcessQueues.env_ready_queues = kmalloc(numOfPriorities * sizeof(struct Env_Queue));
@@ -273,7 +273,6 @@ Should use the following global variables for initialization (declared in kern/c
 	      init_queue(&ProcessQueues.env_ready_queues[i]);
 	      quantums[i] = quantum;
 	 }
-
 	release_spinlock(&ProcessQueues.qlock);
 	//=========================================
 	//DON'T CHANGE THESE LINES=================
