@@ -732,8 +732,8 @@ void sched_set_starv_thresh(uint32 starvThresh)
 	//Your code is here
 	//Comment the following line
 	//panic("Not implemented yet");
-	acquire_spinlock(&starv_qlock);
+	//acquire_spinlock(&starv_qlock);
     starv_thresh = starvThresh;
-    release_spinlock(&starv_qlock);
+    //release_spinlock(&starv_qlock);
     //cprintf("%u",starv_thresh);
 }
